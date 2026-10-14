@@ -1,0 +1,140 @@
+[
+  {
+    "gamme": "Dura-Ace",
+    "datas": [
+      {
+        "id": 1,
+        "min_km": 2500,
+        "max_km": 4000,
+        "note": "Chaîne 12v ultra-fine, demande un entretien strict."
+      },
+      {
+        "id": 3,
+        "min_km": 5000,
+        "max_km": 8000,
+        "note": "Pignons supérieurs en titane, s'usent plus rapidement."
+      },
+      {
+        "id": 2,
+        "min_km": 12000,
+        "max_km": 20000,
+        "note": "Aluminium ultra-léger évidé."
+      }
+    ]
+  },
+  {
+    "gamme": "Ultegra",
+    "datas": [
+      {
+        "id": 1,
+        "min_km": 3000,
+        "max_km": 4500,
+        "note": "Traitement de surface Sil-Tec pour réduire les frictions."
+      },
+      {
+        "id": 3,
+        "min_km": 6000,
+        "max_km": 9000,
+        "note": "Pignons entièrement en acier, excellent compromis poids/durabilité."
+      },
+      {
+        "id": 2,
+        "min_km": 15000,
+        "max_km": 22000,
+        "note": "Aluminium anodisé rigide."
+      }
+    ]
+  },
+  {
+    "gamme": "105",
+    "datas": [
+      {
+        "id": 1,
+        "min_km": 3000,
+        "max_km": 5000,
+        "note": "Chaîne robuste, un peu plus lourde mais très fiable."
+      },
+      {
+        "id": 3,
+        "min_km": 7000,
+        "max_km": 10000,
+        "note": "100% acier, la référence absolue en longévité performance."
+      },
+      {
+        "id": 2,
+        "min_km": 15000,
+        "max_km": 25000,
+        "note": "Excellente résistance aux chocs et à l'usure."
+      }
+    ]
+  },
+  {
+    "gamme": "Tiagra",
+    "datas": [
+      {
+        "id": 1,
+        "min_km": 3500,
+        "max_km": 5500,
+        "note": "Chaîne 10v plus épaisse, très tolérante aux croisements."
+      },
+      {
+        "id": 3,
+        "min_km": 8000,
+        "max_km": 12000,
+        "note": "Pignons en acier épais."
+      },
+      {
+        "id": 2,
+        "min_km": 18000,
+        "max_km": 28000,
+        "note": "Longévité accrue grâce à l'épaisseur des dents."
+      }
+    ]
+  },
+  {
+    "gamme": "Sora",
+    "datas": [
+      {
+        "id": 1,
+        "min_km": 3500,
+        "max_km": 6000,
+        "note": "Chaîne 9v très solide, tolère un entretien espacé."
+      },
+      {
+        "id": 3,
+        "min_km": 8000,
+        "max_km": 12000,
+        "note": "Composants durables conçus pour le cyclotourisme."
+      },
+      {
+        "id": 2,
+        "min_km": 20000,
+        "max_km": 30000,
+        "note": "Acier résistant."
+      }
+    ]
+  },
+  {
+    "gamme": "Claris",
+    "datas": [
+      {
+        "id": 1,
+        "min_km": 4000,
+        "max_km": 6500,
+        "note": "Chaîne 8v large, s'étire très lentement."
+      },
+      {
+        "id": 3,
+        "min_km": 9000,
+        "max_km": 14000,
+        "note": "Pignons très massifs, presque indestructibles en usage normal."
+      },
+      {
+        "id": 2,
+        "min_km": 20000,
+        "max_km": 30000,
+        "note": "Idéal pour le vélotaf et l'initiation sans soucis."
+      }
+    ]
+  }
+]

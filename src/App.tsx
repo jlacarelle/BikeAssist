@@ -31,106 +31,60 @@ import {
 } from "@fluentui/react-icons";
 import bikeIllustration from "../design/assets/gravel-bike-illustration.png";
 import { useDashboardStyles, useGlobalStyles } from "./App.styles";
+import BikesPage from "./components/BikesPage";
 import SideMenu, { type SideMenuView } from "./components/SideMenu";
+import type { Bike, Ride } from "./interfaces/bike";
+import React from "react";
+import { VeloService } from "./services/VeloService";
 
 type View = SideMenuView;
-type Ride = {
-  id: number;
-  name: string;
-  bike: string;
-  date: string;
-  distance: number;
-  duration: string;
-};
-const bikes = [
-  {
-    name: "Gravel du quotidien",
-    model: "Gravel · Shimano GRX",
-    distance: 1840,
-    status: "Chaîne à surveiller",
-  },
-  {
-    name: "Vélo de route",
-    model: "Route · Shimano 105",
-    distance: 640,
-    status: "Tout est à jour",
-  },
-];
-const initialRides: Ride[] = [
-  {
-    id: 1,
-    name: "Boucle des bords de Marne",
-    bike: bikes[0].name,
-    date: "Hier",
-    distance: 42.6,
-    duration: "1 h 52",
-  },
-  {
-    id: 2,
-    name: "Forêt de Ferrières",
-    bike: bikes[1].name,
-    date: "12 oct.",
-    distance: 36.2,
-    duration: "1 h 34",
-  },
-  {
-    id: 3,
-    name: "Sortie du dimanche",
-    bike: bikes[0].name,
-    date: "8 oct.",
-    distance: 58.1,
-    duration: "2 h 28",
-  },
-];
-const parts = [
-  {
-    name: "Chaîne",
-    description: "Gravel du quotidien · Shimano",
-    distance: 460,
-    limit: 500,
-  },
-  {
-    name: "Cassette",
-    description: "Gravel du quotidien · 12 vitesses",
-    distance: 1220,
-    limit: 2500,
-  },
-  {
-    name: "Plateaux",
-    description: "Gravel du quotidien · 40 dents",
-    distance: 2800,
-    limit: 5000,
-  },
-];
 const number = (value: number) =>
   value.toLocaleString("fr-FR", { maximumFractionDigits: 1 });
+const getTodayInputDate = () => {
+  const today = new Date();
+  today.setMinutes(today.getMinutes() - today.getTimezoneOffset());
+  return today.toISOString().slice(0, 10);
+};
 
 function App() {
   useGlobalStyles();
   const styles = useDashboardStyles();
   const [view, setView] = useState<View>("Vue d’ensemble");
-  const [rides, setRides] = useState(initialRides);
+  const [bikes, setBikes] = useState<Bike[]>(() =>
+    new VeloService().getAllBikes(),
+  );
+  const [rides, setRides] = useState<Ride[]>([]);
   const [addOpen, setAddOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
   const [selectedRide, setSelectedRide] = useState<Ride | null>(null);
   const [rideName, setRideName] = useState("");
-  const [rideBike, setRideBike] = useState(bikes[0].name);
+  const [rideBike, setRideBike] = useState("");
   const [rideDistance, setRideDistance] = useState("");
-  const [rideDate, setRideDate] = useState("2026-10-16");
+  const [rideDate, setRideDate] = useState(getTodayInputDate);
   const [rideMinutes, setRideMinutes] = useState("");
   const [error, setError] = useState("");
-  const addedRides = rides.filter((ride) => ride.id > 3);
-  const addedDistance = addedRides.reduce(
+  const totalRideDistance = rides.reduce(
     (total, ride) => total + ride.distance,
     0,
   );
+  const partsToWatch = bikes.flatMap((bike) =>
+    bike.parts
+      .filter((part) => part.limit > 0 && part.distance / part.limit >= 0.85)
+      .map((part) => ({ bike, part })),
+  );
+
+  function navigateToView(nextView: View) {
+    setView(nextView);
+  }
 
   function saveRide(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    const bike = bikes.find((item) => item.name === rideBike);
     const distance = Number(rideDistance.replace(",", "."));
     const minutes = Number(rideMinutes);
     if (
       !rideName.trim() ||
+      !bike ||
       !rideDate ||
       !Number.isFinite(distance) ||
       distance <= 0 ||
@@ -147,6 +101,7 @@ function App() {
         id: Date.now(),
         name: rideName.trim(),
         bike: rideBike,
+        bikeId: bike.id,
         date: new Date(`${rideDate}T12:00:00`).toLocaleDateString("fr-FR", {
           day: "numeric",
           month: "short",
@@ -190,25 +145,32 @@ function App() {
             </span>
           </Button>
         ))}
+        {rides.length === 0 && (
+          <Text className={styles.muted}>Aucune sortie enregistrée.</Text>
+        )}
       </div>
     );
   }
 
   function wearList() {
+    const components = bikes.flatMap((bike) =>
+      bike.parts.map((part) => ({ bike, part })),
+    );
+
     return (
       <div className={styles.wearList}>
-        {parts.map((part) => (
-          <div className={styles.wearRow} key={part.name}>
+        {components.map(({ bike, part }) => (
+          <div className={styles.wearRow} key={`${bike.id}-${part.name}`}>
             <div>
               <Text weight="semibold">{part.name}</Text>
               <Text className={mergeClasses(styles.muted, styles.small)}>
-                {part.description}
+                {bike.name} · {part.reference || bike.brand}
               </Text>
             </div>
             <ProgressBar
               value={part.distance / part.limit}
               color={part.distance / part.limit > 0.85 ? "warning" : "success"}
-              aria-label={`Usure ${part.name} : ${Math.round((part.distance / part.limit) * 100)} %`}
+              aria-label={`Usure ${part.name} sur ${bike.name} : ${Math.round((part.distance / part.limit) * 100)} %`}
             />
             <div className={styles.wearDistance}>
               <Text weight="semibold">{number(part.distance)} km</Text>
@@ -218,6 +180,9 @@ function App() {
             </div>
           </div>
         ))}
+        {components.length === 0 && (
+          <Text className={styles.muted}>Aucune pièce renseignée.</Text>
+        )}
       </div>
     );
   }
@@ -226,16 +191,13 @@ function App() {
     <div className={styles.appShell}>
       <SideMenu
         view={view}
-        onViewChange={setView}
+        onViewChange={navigateToView}
         onHelp={() => setHelpOpen(true)}
       />
       <div className={styles.workspace}>
         <header className={styles.topbar}>
           <Text className={styles.muted}>Votre espace · {view}</Text>
           <div className={styles.topbarActions}>
-            <Text className={styles.demoStatus}>
-              <span className={styles.statusDot} /> Mode démo
-            </Text>
             <Button
               appearance="transparent"
               size="small"
@@ -247,33 +209,56 @@ function App() {
           </div>
         </header>
         <main className={styles.mainContent}>
-          <div className={styles.pageHeading}>
-            <div>
-              <Text className={styles.dateLabel}>VENDREDI 16 OCTOBRE 2026</Text>
-              <Title1 as="h1">
-                {view === "Vue d’ensemble" ? "Bonjour Julien" : view}
-              </Title1>
-              <Text className={styles.muted}>
-                {view === "Vue d’ensemble"
-                  ? "Un œil sur vos vélos, l’esprit libre pour rouler."
-                  : view === "Mes vélos"
-                    ? "Votre garage, toujours prêt à prendre la route."
+          {view !== "Mes vélos" && (
+            <div className={styles.pageHeading}>
+              <div>
+                <Text className={styles.dateLabel}>
+                  {new Intl.DateTimeFormat("fr-FR", {
+                    weekday: "long",
+                    day: "numeric",
+                    month: "long",
+                    year: "numeric",
+                  })
+                    .format(new Date())
+                    .toLocaleUpperCase("fr-FR")}
+                </Text>
+                <Title1 as="h1">
+                  {view === "Vue d’ensemble" ? "Votre garage" : view}
+                </Title1>
+                <Text className={styles.muted}>
+                  {view === "Vue d’ensemble"
+                    ? "Un œil sur vos vélos, l’esprit libre pour rouler."
                     : view === "Sorties"
                       ? "Chaque kilomètre compte."
                       : "L’usure de vos pièces, en un coup d’œil."}
-              </Text>
+                </Text>
+              </div>
+              <Button
+                appearance="primary"
+                icon={<Add24Regular />}
+                disabled={bikes.length === 0}
+                onClick={() => {
+                  setRideBike(bikes[0]?.name ?? "");
+                  setError("");
+                  setAddOpen(true);
+                }}
+              >
+                Ajouter une sortie
+              </Button>
             </div>
-            <Button
-              appearance="primary"
-              icon={<Add24Regular />}
-              onClick={() => {
+          )}
+          {view === "Mes vélos" && (
+            <BikesPage
+              bikes={bikes}
+              onBikesChange={setBikes}
+              rides={rides}
+              onAddRide={(bike) => {
+                setRideBike(bike.name);
                 setError("");
                 setAddOpen(true);
               }}
-            >
-              Ajouter une sortie
-            </Button>
-          </div>
+            />
+          )}
           {view === "Vue d’ensemble" && (
             <>
               <section
@@ -282,21 +267,24 @@ function App() {
               >
                 <div className={styles.bannerCopy}>
                   <Text className={styles.garageStatus}>
-                    <span className={styles.statusDot} /> VOTRE GARAGE SE PORTE
-                    BIEN
+                    <span className={styles.statusDot} /> VOTRE GARAGE
                   </Text>
                   <div className={styles.annualDistance}>
-                    <Text>{number(2480 + addedDistance)}</Text>
+                    <Text>{number(totalRideDistance)}</Text>
                     <Text>km</Text>
                   </div>
                   <Text className={styles.bannerSubtitle}>
-                    parcourus cette année avec vos vélos
+                    parcourus sur vos sorties enregistrées
                   </Text>
                   <div className={styles.bannerBottom}>
                     <Badge appearance="tint" color="success">
-                      Tout est à jour
+                      {bikes.length === 0
+                        ? "Garage vide"
+                        : partsToWatch.length === 0
+                          ? "Tout est à jour"
+                          : `${partsToWatch.length} pièce(s) à surveiller`}
                     </Badge>
-                    <Text>+ {number(320 + addedDistance)} km ce mois-ci</Text>
+                    <Text>{rides.length} sortie(s) enregistrée(s)</Text>
                   </div>
                 </div>
                 <Image
@@ -312,20 +300,24 @@ function App() {
                 {[
                   {
                     label: "Vélos dans le garage",
-                    value: "02",
-                    detail: "1 vélo à surveiller",
+                    value: String(bikes.length).padStart(2, "0"),
+                    detail: `${partsToWatch.length} pièce(s) à surveiller`,
                     icon: <Sport24Regular />,
                   },
                   {
-                    label: "Sorties ce mois-ci",
-                    value: String(12 + addedRides.length),
-                    detail: "Dernière sortie · " + rides[0].date.toLowerCase(),
+                    label: "Sorties enregistrées",
+                    value: String(rides.length),
+                    detail: rides[0]?.date ?? "Aucune sortie enregistrée",
                     icon: <Map24Regular />,
                   },
                   {
                     label: "Entretiens à prévoir",
-                    value: "01",
-                    detail: "Chaîne · dans 40 km",
+                    value: String(partsToWatch.length),
+                    detail: partsToWatch[0]
+                      ? `${partsToWatch[0].part.name} · ${partsToWatch[0].bike.name}`
+                      : bikes.length === 0
+                        ? "Aucun vélo enregistré"
+                        : "Aucune alerte d’entretien",
                     icon: <Settings24Regular />,
                   },
                 ].map((stat) => (
@@ -354,9 +346,11 @@ function App() {
                         L’usure de vos pièces, en un coup d’œil.
                       </Text>
                     </div>
-                    <Badge color="warning" appearance="tint">
-                      1 bientôt
-                    </Badge>
+                    {partsToWatch.length > 0 && (
+                      <Badge color="warning" appearance="tint">
+                        {partsToWatch.length} à surveiller
+                      </Badge>
+                    )}
                   </div>
                   {wearList()}
                   <Button
@@ -364,7 +358,7 @@ function App() {
                     appearance="transparent"
                     icon={<ArrowRight20Regular />}
                     iconPosition="after"
-                    onClick={() => setView("Mes vélos")}
+                    onClick={() => navigateToView("Mes vélos")}
                   >
                     Voir mes vélos
                   </Button>
@@ -384,7 +378,7 @@ function App() {
                       appearance="transparent"
                       icon={<ArrowRight20Regular />}
                       iconPosition="after"
-                      onClick={() => setView("Sorties")}
+                      onClick={() => navigateToView("Sorties")}
                     >
                       Tout voir
                     </Button>
@@ -393,42 +387,6 @@ function App() {
                 </Card>
               </div>
             </>
-          )}
-          {view === "Mes vélos" && (
-            <div className={styles.bikesGrid}>
-              {bikes.map((bike) => (
-                <Card key={bike.name} className={styles.bikeCard}>
-                  <span className={styles.iconTile}>
-                    <Sport24Regular />
-                  </span>
-                  <Text as="h2" size={500} weight="semibold">
-                    {bike.name}
-                  </Text>
-                  <Text className={styles.muted}>{bike.model}</Text>
-                  <Text size={600} weight="bold">
-                    {number(
-                      bike.distance +
-                        addedRides
-                          .filter((ride) => ride.bike === bike.name)
-                          .reduce((total, ride) => total + ride.distance, 0),
-                    )}{" "}
-                    km
-                  </Text>
-                  <Badge
-                    appearance="tint"
-                    color={bike.name === bikes[0].name ? "warning" : "success"}
-                  >
-                    {bike.status}
-                  </Badge>
-                  <Button
-                    appearance="subtle"
-                    onClick={() => setView("Entretiens")}
-                  >
-                    Voir les entretiens
-                  </Button>
-                </Card>
-              ))}
-            </div>
           )}
           {view === "Sorties" && (
             <Card className={styles.dashboardCard}>
@@ -444,15 +402,13 @@ function App() {
                 <Text as="h2" size={400} weight="semibold">
                   Suivi des composants
                 </Text>
-                <Badge color="warning" appearance="tint">
-                  1 bientôt
-                </Badge>
+                {partsToWatch.length > 0 && (
+                  <Badge color="warning" appearance="tint">
+                    {partsToWatch.length} à surveiller
+                  </Badge>
+                )}
               </div>
               {wearList()}
-              <Text className={styles.muted}>
-                Prochain entretien : remplacement de la chaîne du Gravel du
-                quotidien dans 40 km.
-              </Text>
             </Card>
           )}
         </main>
@@ -480,14 +436,18 @@ function App() {
                   <Input
                     value={rideName}
                     onChange={(_, data) => setRideName(data.value)}
-                    placeholder="Boucle des bords de Marne"
+                    placeholder="Nom de la sortie"
                   />
                 </Field>
-                <Field label="Vélo">
+                <Field label="Vélo" required>
                   <Select
                     value={rideBike}
                     onChange={(_, data) => setRideBike(data.value)}
+                    required
                   >
+                    <option value="" disabled>
+                      Choisir un vélo
+                    </option>
                     {bikes.map((bike) => (
                       <option key={bike.name}>{bike.name}</option>
                     ))}
@@ -555,10 +515,9 @@ function App() {
             <DialogTitle>Centre d’aide</DialogTitle>
             <DialogContent>
               <Text>
-                BikeAssist rassemble vos vélos, sorties et entretiens. Cet écran
-                utilise des données fictives. Les sorties ajoutées sont
-                conservées uniquement pendant cette session et disparaissent au
-                rechargement.
+                BikeAssist rassemble vos vélos, sorties et entretiens. Les vélos
+                et sorties ajoutés sont conservés uniquement pendant cette
+                session et disparaissent au rechargement.
               </Text>
             </DialogContent>
             <DialogActions>

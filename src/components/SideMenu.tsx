@@ -1,7 +1,6 @@
 import type { FC, ReactElement } from "react";
 import { useState } from "react";
 import {
-  Avatar,
   Button,
   Divider,
   Text,
@@ -102,12 +101,7 @@ const SideMenu: FC<SideMenuProps> = ({ view, onViewChange, onHelp }) => {
         )}
       >
         {navigation.map((item) => (
-          <Tooltip
-            key={item.name}
-            content={item.name}
-            relationship="label"
-            visible={isCollapsed ? undefined : false}
-          >
+          <Tooltip key={item.name} content={item.name} relationship="label">
             <Button
               icon={item.icon}
               appearance="subtle"
@@ -126,11 +120,7 @@ const SideMenu: FC<SideMenuProps> = ({ view, onViewChange, onHelp }) => {
         ))}
       </nav>
       <Divider className={styles.helpDivider} />
-      <Tooltip
-        content="Centre d’aide"
-        relationship="label"
-        visible={isCollapsed ? undefined : false}
-      >
+      <Tooltip content="Centre d’aide" relationship="label">
         <Button
           className={mergeClasses(
             styles.helpNav,
@@ -145,11 +135,7 @@ const SideMenu: FC<SideMenuProps> = ({ view, onViewChange, onHelp }) => {
         </Button>
       </Tooltip>
       <div className={styles.sidebarFooter}>
-        <Tooltip
-          content="Vos données restent privées"
-          relationship="label"
-          visible={isCollapsed ? undefined : false}
-        >
+        <Tooltip content="Données temporaires" relationship="label">
           <div
             className={mergeClasses(
               styles.privacy,
@@ -159,37 +145,9 @@ const SideMenu: FC<SideMenuProps> = ({ view, onViewChange, onHelp }) => {
             <ShieldCheckmark20Regular />
             {!isCollapsed && (
               <div>
-                <Text weight="semibold">Vos données restent privées</Text>
+                <Text weight="semibold">Données temporaires</Text>
                 <Text className={mergeClasses(styles.muted, styles.small)}>
-                  Données fictives · session de démo
-                </Text>
-              </div>
-            )}
-          </div>
-        </Tooltip>
-        <Divider />
-        <Tooltip
-          content="Julien LACARELLE · Compte personnel"
-          relationship="label"
-          visible={isCollapsed ? undefined : false}
-        >
-          <div
-            className={mergeClasses(
-              styles.profile,
-              isCollapsed && styles.profileCollapsed,
-            )}
-          >
-            <Avatar
-              name="Julien LACARELLE"
-              initials="JL"
-              color="teal"
-              size={32}
-            />
-            {!isCollapsed && (
-              <div>
-                <Text weight="semibold">Julien LACARELLE</Text>
-                <Text className={mergeClasses(styles.muted, styles.small)}>
-                  Compte personnel
+                  Effacées au rechargement
                 </Text>
               </div>
             )}

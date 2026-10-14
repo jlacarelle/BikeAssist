@@ -1,0 +1,17 @@
+[
+  {
+    "id": 1,
+    "name": "Chaîne",
+    "example": "Shimano CN-M7100"
+  },
+  {
+    "id": 2,
+    "name": "Plateaux",
+    "example": "Shimano 40 dents · mono-plateau"
+  },
+  {
+    "id": 3,
+    "name": "Cassette",
+    "example": "Shimano 10–45 dents"
+  }
+]
