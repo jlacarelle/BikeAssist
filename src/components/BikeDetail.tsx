@@ -40,17 +40,20 @@ function BikeDetail({
 }: BikeDetailProps) {
   const styles = useDashboardStyles();
   const nextPart = bike.parts.reduce((nearest, part) =>
-    part.limit - part.distance < nearest.limit - nearest.distance
+    part.maxDistance - part.distance < nearest.maxDistance - nearest.distance
       ? part
       : nearest,
   );
-  const remainingDistance = Math.max(0, nextPart.limit - nextPart.distance);
+  const remainingDistance = Math.max(
+    0,
+    nextPart.maxDistance - nextPart.distance,
+  );
 
   function partCards() {
     return (
       <div className={styles.bikePartsGrid}>
         {bike.parts.map((part) => {
-          const progress = Math.min(part.distance / part.limit, 1);
+          const progress = Math.min(part.distance / part.maxDistance, 1);
           const attention = progress >= 0.85;
           return (
             <div className={styles.bikePartCard} key={part.name}>
@@ -73,12 +76,12 @@ function BikeDetail({
               />
               <div className={styles.partDistanceLine}>
                 <Text>{number(part.distance)} km parcourus</Text>
-                <Text>{number(part.limit)} km conseillés</Text>
+                <Text>{number(part.maxDistance)} km conseillés</Text>
               </div>
               <Text className={styles.muted}>
                 {attention
-                  ? `Il reste environ ${number(Math.max(0, part.limit - part.distance))} km avant remplacement.`
-                  : `Environ ${number(part.limit - part.distance)} km avant contrôle.`}
+                  ? `Il reste environ ${number(Math.max(0, part.maxDistance - part.distance))} km avant remplacement.`
+                  : `Environ ${number(part.maxDistance - part.distance)} km avant contrôle.`}
               </Text>
             </div>
           );
@@ -268,11 +271,11 @@ function BikeDetail({
                 </div>
                 <div>
                   <dt>Transmission</dt>
-                  <dd>{bike.drivetrain || "Non renseignée"}</dd>
+                  <dd>{bike.gammeName || "Non renseignée"}</dd>
                 </div>
                 <div>
                   <dt>Ajouté le</dt>
-                  <dd>{bike.addedOn}</dd>
+                  <dd>{"non renseigné"}</dd>
                 </div>
               </dl>
               <Button

@@ -31,21 +31,6 @@ export class VeloService {
         return bikes.find(bike => bike.id === id);
     }
 
-    public createEmptyBike(): Bike {
-        const defaultMateriel = this.materielService.getMaterielByGamme("");
-        return {
-            id: crypto.randomUUID(),
-            name: "",
-            type: "Route",
-            brand: "",
-            model: "",
-            distance: 0,
-            gammeName: "",
-            parts: [],
-            addedOn: new Date(),
-        };
-    }
-
     public createBike(bike: Bike, parts: BikePart[]): Bike {
         const bikes = this.getAllBikes();
         const savedBike = {

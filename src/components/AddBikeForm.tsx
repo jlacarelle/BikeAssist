@@ -54,22 +54,33 @@ const AddBikeForm: FC<AddBikeFormProps> = ({
       : null,
   );
 
-  const getDefaultMateriel: () => MaterielAvecGamme | null = () => {
-    return selectedGamme
-      ? (materielService.getMaterielByGamme(selectedGamme.gamme) ?? null)
-      : null;
+  const getDefaultMateriel: (bikeId: string) => BikePart[] = (bikeId) => {
+    return (
+      materiel?.datas.map(
+        (data) =>
+          ({
+            bikeId: bikeId,
+            name: data.name,
+            distance: 0,
+            isActif: true,
+            id: data.id,
+            maxDistance: data.max_km,
+          }) as BikePart,
+      ) ?? []
+    );
   };
 
+  const defaultID = crypto.randomUUID();
   const [bike, setBike] = useState<Bike>(
     initialBike ?? {
-      id: "",
+      id: defaultID,
       name: "",
       type: "Route",
       brand: "",
       model: "",
       distance: 0,
       gammeName: selectedGamme?.gamme ?? "",
-      parts: materiel?.parts ?? [],
+      parts: getDefaultMateriel(defaultID),
       addedOn: new Date(),
     },
   );
@@ -189,12 +200,17 @@ const AddBikeForm: FC<AddBikeFormProps> = ({
               <div className={styles.bikePartFormRow} key={data.id}>
                 <Field label={`${data.name} · référence / gamme`}>
                   <Input
-                    value={bike.parts[index]?.reference ?? data.example ?? ""}
+                    value={
+                      bike.parts?.find((part) => part.id === data.id)
+                        ?.reference ??
+                      data.example ??
+                      ""
+                    }
                     onChange={(_, inputData) =>
                       setBike((current) => ({
                         ...current,
-                        parts: current.parts.map((part, partIndex) =>
-                          partIndex === index
+                        parts: current.parts.map((part) =>
+                          part.id === data.id
                             ? { ...part, reference: inputData.value }
                             : part,
                         ),
@@ -210,14 +226,15 @@ const AddBikeForm: FC<AddBikeFormProps> = ({
                     type="number"
                     min={1}
                     value={
-                      bike?.parts[index]?.maxDistance?.toString() ??
-                      String(data.max_km)
+                      bike?.parts
+                        ?.find((part) => part.id === data.id)
+                        ?.maxDistance?.toString() ?? String(data.max_km)
                     }
                     onChange={(_, inputData) =>
                       setBike((current) => ({
                         ...current,
-                        parts: current.parts.map((part, partIndex) =>
-                          partIndex === index
+                        parts: current.parts.map((part) =>
+                          part.id === data.id
                             ? { ...part, maxDistance: Number(inputData.value) }
                             : part,
                         ),

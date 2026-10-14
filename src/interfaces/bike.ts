@@ -4,8 +4,7 @@ export interface BikePart {
     name: string;
     reference: string;
     distance: number;
-    limit: number;
-    id: string;
+    id: number;
     maxDistance: number;
     isActif: boolean;
     bikeId: string;

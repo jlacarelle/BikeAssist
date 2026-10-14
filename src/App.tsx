@@ -69,7 +69,10 @@ function App() {
   );
   const partsToWatch = bikes.flatMap((bike) =>
     bike.parts
-      .filter((part) => part.limit > 0 && part.distance / part.limit >= 0.85)
+      .filter(
+        (part) =>
+          part.maxDistance > 0 && part.distance / part.maxDistance >= 0.85,
+      )
       .map((part) => ({ bike, part })),
   );
 
@@ -168,14 +171,16 @@ function App() {
               </Text>
             </div>
             <ProgressBar
-              value={part.distance / part.limit}
-              color={part.distance / part.limit > 0.85 ? "warning" : "success"}
-              aria-label={`Usure ${part.name} sur ${bike.name} : ${Math.round((part.distance / part.limit) * 100)} %`}
+              value={part.distance / part.maxDistance}
+              color={
+                part.distance / part.maxDistance > 0.85 ? "warning" : "success"
+              }
+              aria-label={`Usure ${part.name} sur ${bike.name} : ${Math.round((part.distance / part.maxDistance) * 100)} %`}
             />
             <div className={styles.wearDistance}>
               <Text weight="semibold">{number(part.distance)} km</Text>
               <Text className={mergeClasses(styles.muted, styles.small)}>
-                sur {number(part.limit)} km
+                sur {number(part.maxDistance)} km
               </Text>
             </div>
           </div>
