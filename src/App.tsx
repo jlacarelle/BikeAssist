@@ -9,21 +9,15 @@ import {
   DialogContent,
   DialogSurface,
   DialogTitle,
-  Field,
   Image,
-  Input,
   ProgressBar,
-  Select,
   Text,
   Title1,
-  Tooltip,
   mergeClasses,
 } from "@fluentui/react-components";
 import {
   Add24Regular,
   ArrowRight20Regular,
-  CheckmarkCircle20Regular,
-  Dismiss24Regular,
   QuestionCircle20Regular,
   Settings24Regular,
   Sport24Regular,
@@ -31,38 +25,31 @@ import {
 } from "@fluentui/react-icons";
 import bikeIllustration from "../design/assets/gravel-bike-illustration.png";
 import { useDashboardStyles, useGlobalStyles } from "./App.styles";
-import BikesPage from "./components/BikesPage";
+import { useServiceScope } from "./common/useServiceScope";
+import BikesPage from "./components/bikes/BikesPage";
+import AddRideDialog from "./components/rides/AddRideDialog";
+import RidesPage from "./components/rides/RidesPage";
 import SideMenu, { type SideMenuView } from "./components/SideMenu";
 import type { Bike, Ride } from "./interfaces/bike";
-import React from "react";
-import { VeloService } from "./services/VeloService";
 
 type View = SideMenuView;
 const number = (value: number) =>
   value.toLocaleString("fr-FR", { maximumFractionDigits: 1 });
-const getTodayInputDate = () => {
-  const today = new Date();
-  today.setMinutes(today.getMinutes() - today.getTimezoneOffset());
-  return today.toISOString().slice(0, 10);
-};
-
 function App() {
   useGlobalStyles();
   const styles = useDashboardStyles();
+  const serviceScope = useServiceScope();
   const [view, setView] = useState<View>("Vue d’ensemble");
   const [bikes, setBikes] = useState<Bike[]>(() =>
-    new VeloService().getAllBikes(),
+    serviceScope.veloService.getAllBikes(),
   );
-  const [rides, setRides] = useState<Ride[]>([]);
+  const [rides, setRides] = useState<Ride[]>(() =>
+    serviceScope.rideService.getAllRides(),
+  );
   const [addOpen, setAddOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
   const [selectedRide, setSelectedRide] = useState<Ride | null>(null);
-  const [rideName, setRideName] = useState("");
-  const [rideBike, setRideBike] = useState("");
-  const [rideDistance, setRideDistance] = useState("");
-  const [rideDate, setRideDate] = useState(getTodayInputDate);
-  const [rideMinutes, setRideMinutes] = useState("");
-  const [error, setError] = useState("");
+  const [initialRideBike, setInitialRideBike] = useState("");
   const totalRideDistance = rides.reduce(
     (total, ride) => total + ride.distance,
     0,
@@ -80,45 +67,28 @@ function App() {
     setView(nextView);
   }
 
-  function saveRide(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const bike = bikes.find((item) => item.name === rideBike);
-    const distance = Number(rideDistance.replace(",", "."));
-    const minutes = Number(rideMinutes);
-    if (
-      !rideName.trim() ||
-      !bike ||
-      !rideDate ||
-      !Number.isFinite(distance) ||
-      distance <= 0 ||
-      !Number.isInteger(minutes) ||
-      minutes <= 0
-    ) {
-      setError(
-        "Renseignez un nom, une date, une distance positive et une durée en minutes entières.",
-      );
-      return;
-    }
-    setRides([
-      {
-        id: Date.now(),
-        name: rideName.trim(),
-        bike: rideBike,
-        bikeId: bike.id,
-        date: new Date(`${rideDate}T12:00:00`).toLocaleDateString("fr-FR", {
+  function saveRide(ride: {
+    name: string;
+    bikeName: string;
+    date: string;
+    distance: number;
+  }) {
+    const bike = bikes.find((item) => item.name === ride.bikeName);
+    if (!bike) return;
+    serviceScope.rideService.createRide({
+      id: crypto.randomUUID(),
+      name: ride.name,
+      bike: ride.bikeName,
+      bikeId: bike.id,
+      date: new Date(`${ride.date}T12:00:00`).toLocaleDateString("fr-FR", {
           day: "numeric",
           month: "short",
-        }),
-        distance,
-        duration: `${Math.floor(minutes / 60)} h ${String(minutes % 60).padStart(2, "0")}`,
-      },
-      ...rides,
-    ]);
+      }),
+      distance: ride.distance,
+    });
+    setRides(serviceScope.rideService.getAllRides());
+    setBikes(serviceScope.veloService.getAllBikes());
     setAddOpen(false);
-    setRideName("");
-    setRideDistance("");
-    setRideMinutes("");
-    setError("");
   }
 
   function rideList(all = false) {
@@ -142,9 +112,6 @@ function App() {
             </span>
             <span className={styles.rideDistance}>
               <Text weight="semibold">{number(ride.distance)} km</Text>
-              <Text className={mergeClasses(styles.muted, styles.small)}>
-                {ride.duration}
-              </Text>
             </span>
           </Button>
         ))}
@@ -243,8 +210,7 @@ function App() {
                 icon={<Add24Regular />}
                 disabled={bikes.length === 0}
                 onClick={() => {
-                  setRideBike(bikes[0]?.name ?? "");
-                  setError("");
+                  setInitialRideBike(bikes[0]?.name ?? "");
                   setAddOpen(true);
                 }}
               >
@@ -257,9 +223,15 @@ function App() {
               bikes={bikes}
               onBikesChange={setBikes}
               rides={rides}
+              onDeleteBike={(bikeId) => {
+                serviceScope.veloService.deleteBike(bikeId);
+                setBikes(serviceScope.veloService.getAllBikes());
+                setRides((currentRides) =>
+                  currentRides.filter((ride) => ride.bikeId !== bikeId),
+                );
+              }}
               onAddRide={(bike) => {
-                setRideBike(bike.name);
-                setError("");
+                setInitialRideBike(bike.name);
                 setAddOpen(true);
               }}
             />
@@ -394,12 +366,7 @@ function App() {
             </>
           )}
           {view === "Sorties" && (
-            <Card className={styles.dashboardCard}>
-              <Text as="h2" size={400} weight="semibold">
-                Toutes les sorties
-              </Text>
-              {rideList(true)}
-            </Card>
+            <RidesPage rides={rides} onSelectRide={setSelectedRide} />
           )}
           {view === "Entretiens" && (
             <Card className={styles.dashboardCard}>
@@ -418,99 +385,15 @@ function App() {
           )}
         </main>
       </div>
-      <Dialog open={addOpen} onOpenChange={(_, data) => setAddOpen(data.open)}>
-        <DialogSurface className={styles.rideDialog}>
-          <form onSubmit={saveRide}>
-            <DialogBody>
-              <DialogTitle
-                action={
-                  <Tooltip content="Fermer" relationship="label">
-                    <Button
-                      appearance="subtle"
-                      icon={<Dismiss24Regular />}
-                      aria-label="Fermer"
-                      onClick={() => setAddOpen(false)}
-                    />
-                  </Tooltip>
-                }
-              >
-                Ajouter une sortie
-              </DialogTitle>
-              <DialogContent className={styles.rideForm}>
-                <Field label="Nom de la sortie" required>
-                  <Input
-                    value={rideName}
-                    onChange={(_, data) => setRideName(data.value)}
-                    placeholder="Nom de la sortie"
-                  />
-                </Field>
-                <Field label="Vélo" required>
-                  <Select
-                    value={rideBike}
-                    onChange={(_, data) => setRideBike(data.value)}
-                    required
-                  >
-                    <option value="" disabled>
-                      Choisir un vélo
-                    </option>
-                    {bikes.map((bike) => (
-                      <option key={bike.name}>{bike.name}</option>
-                    ))}
-                  </Select>
-                </Field>
-                <Field label="Date" required>
-                  <Input
-                    type="date"
-                    value={rideDate}
-                    onChange={(_, data) => setRideDate(data.value)}
-                    required
-                  />
-                </Field>
-                <div className={styles.formColumns}>
-                  <Field label="Distance (km)" required>
-                    <Input
-                      value={rideDistance}
-                      onChange={(_, data) => setRideDistance(data.value)}
-                      inputMode="decimal"
-                      placeholder="42,6"
-                    />
-                  </Field>
-                  <Field label="Durée (minutes)" required>
-                    <Input
-                      type="number"
-                      min={1}
-                      step={1}
-                      value={rideMinutes}
-                      onChange={(_, data) => setRideMinutes(data.value)}
-                      placeholder="112"
-                    />
-                  </Field>
-                </div>
-                {error && (
-                  <Text role="alert" className={styles.formError}>
-                    {error}
-                  </Text>
-                )}
-              </DialogContent>
-              <DialogActions>
-                <Button
-                  appearance="secondary"
-                  onClick={() => setAddOpen(false)}
-                >
-                  Annuler
-                </Button>
-                <Button
-                  type="submit"
-                  appearance="primary"
-                  icon={<CheckmarkCircle20Regular />}
-                >
-                  Ajouter la sortie
-                </Button>
-              </DialogActions>
-            </DialogBody>
-          </form>
-        </DialogSurface>
-      </Dialog>
+      {addOpen && (
+        <AddRideDialog
+          open={addOpen}
+          bikes={bikes}
+          initialBikeName={initialRideBike}
+          onClose={() => setAddOpen(false)}
+          onSubmit={saveRide}
+        />
+      )}
       <Dialog
         open={helpOpen}
         onOpenChange={(_, data) => setHelpOpen(data.open)}
@@ -549,7 +432,6 @@ function App() {
               <Text size={600} weight="semibold">
                 {number(selectedRide?.distance ?? 0)} km
               </Text>
-              <Text>Durée : {selectedRide?.duration}</Text>
             </DialogContent>
             <DialogActions>
               <Button

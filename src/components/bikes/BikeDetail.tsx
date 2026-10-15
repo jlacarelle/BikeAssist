@@ -13,8 +13,8 @@ import {
   Map24Regular,
   Sport24Regular,
 } from "@fluentui/react-icons";
-import { useDashboardStyles } from "../App.styles";
-import type { Bike, BikeTab, Ride } from "../interfaces/bike";
+import { useDashboardStyles } from "../../App.styles";
+import type { Bike, BikeTab, Ride } from "../../interfaces/bike";
 
 type BikeDetailProps = {
   bike: Bike;
@@ -107,9 +107,7 @@ function BikeDetail({
             </span>
             <div className={styles.bikeRideName}>
               <Text weight="semibold">{ride.name}</Text>
-              <Text className={styles.muted}>
-                {ride.date} · {ride.duration}
-              </Text>
+              <Text className={styles.muted}>{ride.date}</Text>
             </div>
             <Text weight="semibold">{number(ride.distance)} km</Text>
           </div>

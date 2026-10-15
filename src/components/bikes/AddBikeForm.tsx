@@ -13,10 +13,10 @@ import {
   CheckmarkCircle20Regular,
   ShieldCheckmark20Regular,
 } from "@fluentui/react-icons";
-import { useDashboardStyles } from "../App.styles";
-import type { Gamme, MaterielAvecGamme } from "../interfaces/materiel";
-import { type Bike, type BikeType, type BikePart } from "../interfaces/bike";
-import { MaterielService } from "../services/MaterielService";
+import { useDashboardStyles } from "../../App.styles";
+import { useServiceScope } from "../../common/useServiceScope";
+import type { Gamme, MaterielAvecGamme } from "../../interfaces/materiel";
+import { type Bike, type BikeType, type BikePart } from "../../interfaces/bike";
 
 type AddBikeFormProps = {
   initialBike?: Bike | null;
@@ -30,8 +30,6 @@ type AddBikeFormProps = {
   onCancel: () => void;
 };
 
-const materielService = new MaterielService();
-
 const AddBikeForm: FC<AddBikeFormProps> = ({
   initialBike,
   error,
@@ -40,6 +38,7 @@ const AddBikeForm: FC<AddBikeFormProps> = ({
   onCancel,
 }) => {
   const styles = useDashboardStyles();
+  const { materielService } = useServiceScope();
 
   const gammes: Gamme[] = materielService.getAll();
 
@@ -54,9 +53,12 @@ const AddBikeForm: FC<AddBikeFormProps> = ({
       : null,
   );
 
-  const getDefaultMateriel: (bikeId: string) => BikePart[] = (bikeId) => {
+  const getDefaultMateriel = (
+    bikeId: string,
+    materielSource: MaterielAvecGamme | null = materiel,
+  ): BikePart[] => {
     return (
-      materiel?.datas.map(
+      materielSource?.datas.map(
         (data) =>
           ({
             bikeId: bikeId,
@@ -64,6 +66,7 @@ const AddBikeForm: FC<AddBikeFormProps> = ({
             distance: 0,
             isActif: true,
             id: data.id,
+
             maxDistance: data.max_km,
           }) as BikePart,
       ) ?? []
@@ -91,6 +94,11 @@ const AddBikeForm: FC<AddBikeFormProps> = ({
       ? (materielService.getMaterielByGamme(gamme.gamme) ?? null)
       : null;
     setSelectedGamme(gamme);
+    setBike((current) => ({
+      ...current,
+      gammeName: gamme?.gamme ?? "",
+      parts: getDefaultMateriel(current.id, gammeMateriel),
+    }));
     setMateriel(gammeMateriel);
   };
 
@@ -161,10 +169,23 @@ const AddBikeForm: FC<AddBikeFormProps> = ({
                   min={0}
                   value={bike.distance?.toString()}
                   onChange={(_, data) =>
-                    setBike((current) => ({
-                      ...current,
-                      distance: Number(data.value),
-                    }))
+                    setBike((current) => {
+                      const distance = Number(data.value);
+
+                      for (const part of current.parts) {
+                        console.log(part.distance);
+                        part.distance = distance;
+                        console.log(`Updated distance for part ${part.name}: ${part.distance}`);
+                      }
+
+                      console.log(current.parts);
+
+                      return {
+                        ...current,
+                        distance,
+                        parts: current.parts
+                      };
+                    })
                   }
                   required
                 />
@@ -196,7 +217,7 @@ const AddBikeForm: FC<AddBikeFormProps> = ({
             </Text>
           </div>
           <div className={styles.bikePartFields}>
-            {materiel?.datas.map((data, index) => (
+            {materiel?.datas.map((data) => (
               <div className={styles.bikePartFormRow} key={data.id}>
                 <Field label={`${data.name} · référence / gamme`}>
                   <Input
@@ -220,7 +241,7 @@ const AddBikeForm: FC<AddBikeFormProps> = ({
                   />
                 </Field>
                 <Field
-                  label={`Remplacement conseillé après (km) - ${data.max_km}`}
+                  label={`Remplacement conseillé après (km)` }
                 >
                   <Input
                     type="number"
@@ -229,6 +250,7 @@ const AddBikeForm: FC<AddBikeFormProps> = ({
                       bike?.parts
                         ?.find((part) => part.id === data.id)
                         ?.maxDistance?.toString() ?? String(data.max_km)
+                   //   String(data.max_km)
                     }
                     onChange={(_, inputData) =>
                       setBike((current) => ({

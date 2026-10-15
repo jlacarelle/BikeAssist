@@ -5,24 +5,37 @@ import {
   type FormEvent,
   type SetStateAction,
 } from "react";
-import { Button, Card, Text, Title1 } from "@fluentui/react-components";
+import {
+  Button,
+  Card,
+  Dialog,
+  DialogActions,
+  DialogBody,
+  DialogContent,
+  DialogSurface,
+  DialogTitle,
+  Text,
+  Title1,
+} from "@fluentui/react-components";
 import {
   Add24Regular,
   ArrowLeft20Regular,
+  Delete20Regular,
   Edit20Regular,
   Sport24Regular,
 } from "@fluentui/react-icons";
-import { useDashboardStyles } from "../App.styles";
+import { useDashboardStyles } from "../../App.styles";
+import { useServiceScope } from "../../common/useServiceScope";
 import AddBikeForm from "./AddBikeForm";
 import BikeDetail from "./BikeDetail";
-import type { Bike, BikePart, BikeTab, Ride } from "../interfaces/bike";
-import { VeloService } from "../services/VeloService";
+import type { Bike, BikePart, BikeTab, Ride } from "../../interfaces/bike";
 
 type BikesPageProps = {
   bikes: Bike[];
   onBikesChange: Dispatch<SetStateAction<Bike[]>>;
   rides: Ride[];
   onAddRide: (bike: Bike) => void;
+  onDeleteBike: (bikeId: string) => void;
 };
 
 type Page = "list" | "form" | "detail";
@@ -35,13 +48,16 @@ const BikesPage: FC<BikesPageProps> = ({
   onBikesChange,
   rides,
   onAddRide,
+  onDeleteBike,
 }) => {
   const styles = useDashboardStyles();
+  const serviceScope = useServiceScope();
   const [page, setPage] = useState<Page>("list");
   const [selectedBikeId, setSelectedBikeId] = useState<string | null>(null);
   const [editingBikeId, setEditingBikeId] = useState<string | null>(null);
   const [selectedTab, setSelectedTab] = useState<BikeTab>("Aperçu");
   const [error, setError] = useState("");
+  const [bikeToDelete, setBikeToDelete] = useState<Bike | null>(null);
 
   const selectedBike = bikes.find((bike) => bike.id === selectedBikeId) ?? null;
   const selectedBikeRides = selectedBike
@@ -64,10 +80,8 @@ const BikesPage: FC<BikesPageProps> = ({
     parts: BikePart[],
   ) {
     event.preventDefault();
-    const veloService = new VeloService();
-
-    const savedBike = veloService.createBike(bike, parts);
-    onBikesChange(veloService.getAllBikes());
+    const savedBike = serviceScope.veloService.createBike(bike, parts);
+    onBikesChange(serviceScope.veloService.getAllBikes());
 
     setSelectedBikeId(savedBike.id);
     setPage(editingBikeId ? "detail" : "list");
@@ -131,6 +145,14 @@ const BikesPage: FC<BikesPageProps> = ({
               onClick={() => openForm(selectedBike)}
             >
               Modifier
+            </Button>
+            <Button
+              appearance="secondary"
+              className={styles.deleteBikeButton}
+              icon={<Delete20Regular />}
+              onClick={() => setBikeToDelete(selectedBike)}
+            >
+              Supprimer
             </Button>
             <Button
               appearance="primary"
@@ -201,6 +223,13 @@ const BikesPage: FC<BikesPageProps> = ({
                       aria-label={`Modifier ${bike.name}`}
                       onClick={() => openForm(bike)}
                     />
+                    <Button
+                      appearance="subtle"
+                      className={styles.deleteBikeButton}
+                      icon={<Delete20Regular />}
+                      aria-label={`Supprimer ${bike.name}`}
+                      onClick={() => setBikeToDelete(bike)}
+                    />
                   </div>
                 </Card>
               );
@@ -229,6 +258,46 @@ const BikesPage: FC<BikesPageProps> = ({
           onAddRide={() => onAddRide(selectedBike)}
         />
       )}
+
+      <Dialog
+        open={bikeToDelete !== null}
+        onOpenChange={(_, data) => {
+          if (!data.open) setBikeToDelete(null);
+        }}
+      >
+        <DialogSurface className={styles.deleteBikeDialog}>
+          <DialogBody>
+            <DialogTitle>Supprimer ce vélo ?</DialogTitle>
+            <DialogContent>
+              Le vélo « {bikeToDelete?.name} », ses pièces et ses sorties
+              associées seront supprimés. Cette action est définitive.
+            </DialogContent>
+            <DialogActions className={styles.deleteBikeDialogActions}>
+              <Button
+                appearance="secondary"
+                className={styles.deleteBikeDialogButton}
+                onClick={() => setBikeToDelete(null)}
+              >
+                Annuler
+              </Button>
+              <Button
+                appearance="primary"
+                className={styles.deleteBikeDialogButton}
+                icon={<Delete20Regular />}
+                onClick={() => {
+                  if (!bikeToDelete) return;
+                  onDeleteBike(bikeToDelete.id);
+                  setBikeToDelete(null);
+                  setSelectedBikeId(null);
+                  setPage("list");
+                }}
+              >
+                Supprimer le vélo
+              </Button>
+            </DialogActions>
+          </DialogBody>
+        </DialogSurface>
+      </Dialog>
     </>
   );
 };

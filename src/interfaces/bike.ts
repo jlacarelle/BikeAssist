@@ -1,3 +1,6 @@
+import type { Ride } from "./ride";
+export type { Ride } from "./ride";
+
 export type BikeType = "Route" | "Gravel" | "VTT" | "Ville";
 
 export interface BikePart {
@@ -24,15 +27,6 @@ export interface Bike {
     lastService?: Date;
 }
 
-export interface Ride {
-    id: number;
-    name: string;
-    bike: string;
-    bikeId: string;
-    date: string;
-    distance: number;
-    duration: string;
-}
 
 export type BikeTab = "Aperçu" | "Pièces" | "Sorties" | "Entretiens";
 
