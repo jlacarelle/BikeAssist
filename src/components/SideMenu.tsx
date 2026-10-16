@@ -17,6 +17,7 @@ import {
   PanelLeftContractRegular,
   PanelLeftExpandRegular,
 } from "@fluentui/react-icons";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useDashboardStyles } from "../App.styles";
 
 export type SideMenuView =
@@ -26,20 +27,20 @@ export type SideMenuView =
   | "Entretiens";
 
 type SideMenuProps = {
-  view: SideMenuView;
-  onViewChange: (view: SideMenuView) => void;
   onHelp: () => void;
 };
 
-const navigation: { name: SideMenuView; icon: ReactElement }[] = [
-  { name: "Vue d’ensemble", icon: <Board24Regular /> },
-  { name: "Mes vélos", icon: <Sport24Regular /> },
-  { name: "Sorties", icon: <Map24Regular /> },
-  { name: "Entretiens", icon: <Settings24Regular /> },
+const navigation: { name: SideMenuView; to: string; icon: ReactElement }[] = [
+  { name: "Vue d’ensemble", to: "/", icon: <Board24Regular /> },
+  { name: "Mes vélos", to: "/garage", icon: <Sport24Regular /> },
+  { name: "Sorties", to: "/rides", icon: <Map24Regular /> },
+  { name: "Entretiens", to: "/maintenance", icon: <Settings24Regular /> },
 ];
 
-const SideMenu: FC<SideMenuProps> = ({ view, onViewChange, onHelp }) => {
+const SideMenu: FC<SideMenuProps> = ({ onHelp }) => {
   const styles = useDashboardStyles();
+  const navigate = useNavigate();
+  const { pathname } = useLocation();
 
   const [isCollapsed, setIsCollapsed] = useState(false);
 
@@ -100,24 +101,31 @@ const SideMenu: FC<SideMenuProps> = ({ view, onViewChange, onHelp }) => {
           isCollapsed && styles.navigationCollapsed,
         )}
       >
-        {navigation.map((item) => (
-          <Tooltip key={item.name} content={item.name} relationship="label">
-            <Button
-              icon={item.icon}
-              appearance="subtle"
-              className={mergeClasses(
-                styles.navButton,
-                isCollapsed && styles.iconOnlyButton,
-                view === item.name && styles.active,
-              )}
-              aria-label={item.name}
-              aria-current={view === item.name ? "page" : undefined}
-              onClick={() => onViewChange(item.name)}
-            >
-              {!isCollapsed && item.name}
-            </Button>
-          </Tooltip>
-        ))}
+        {navigation.map((item) => {
+          const isActive =
+            item.to === "/"
+              ? pathname === "/"
+              : pathname === item.to || pathname.startsWith(`${item.to}/`);
+
+          return (
+            <Tooltip key={item.name} content={item.name} relationship="label">
+              <Button
+                icon={item.icon}
+                appearance="subtle"
+                className={mergeClasses(
+                  styles.navButton,
+                  isCollapsed && styles.iconOnlyButton,
+                  isActive && styles.active,
+                )}
+                aria-label={item.name}
+                aria-current={isActive ? "page" : undefined}
+                onClick={() => navigate(item.to)}
+              >
+                {!isCollapsed && item.name}
+              </Button>
+            </Tooltip>
+          );
+        })}
       </nav>
       <Divider className={styles.helpDivider} />
       <Tooltip content="Centre d’aide" relationship="label">

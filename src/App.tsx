@@ -36,8 +36,29 @@ import SideMenu, { type SideMenuView } from "./components/SideMenu";
 import type { Bike, Ride } from "./interfaces/bike";
 import React from "react";
 import { VeloService } from "./services/VeloService";
+import {
+  Navigate,
+  Route,
+  Routes,
+  useLocation,
+  useNavigate,
+} from "react-router-dom";
 
 type View = SideMenuView;
+const viewPaths: Record<View, string> = {
+  "Vue d’ensemble": "/",
+  "Mes vélos": "/garage",
+  Sorties: "/rides",
+  Entretiens: "/maintenance",
+};
+
+function getView(pathname: string): View {
+  if (pathname.startsWith("/garage")) return "Mes vélos";
+  if (pathname.startsWith("/rides")) return "Sorties";
+  if (pathname.startsWith("/maintenance")) return "Entretiens";
+  return "Vue d’ensemble";
+}
+
 const number = (value: number) =>
   value.toLocaleString("fr-FR", { maximumFractionDigits: 1 });
 const getTodayInputDate = () => {
@@ -49,7 +70,9 @@ const getTodayInputDate = () => {
 function App() {
   useGlobalStyles();
   const styles = useDashboardStyles();
-  const [view, setView] = useState<View>("Vue d’ensemble");
+  const location = useLocation();
+  const navigate = useNavigate();
+  const view = getView(location.pathname);
   const [bikes, setBikes] = useState<Bike[]>(() =>
     new VeloService().getAllBikes(),
   );
@@ -75,10 +98,6 @@ function App() {
       )
       .map((part) => ({ bike, part })),
   );
-
-  function navigateToView(nextView: View) {
-    setView(nextView);
-  }
 
   function saveRide(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -195,8 +214,6 @@ function App() {
   return (
     <div className={styles.appShell}>
       <SideMenu
-        view={view}
-        onViewChange={navigateToView}
         onHelp={() => setHelpOpen(true)}
       />
       <div className={styles.workspace}>
@@ -214,7 +231,7 @@ function App() {
           </div>
         </header>
         <main className={styles.mainContent}>
-          {view !== "Mes vélos" && (
+          {!location.pathname.startsWith("/garage") && (
             <div className={styles.pageHeading}>
               <div>
                 <Text className={styles.dateLabel}>
@@ -252,19 +269,10 @@ function App() {
               </Button>
             </div>
           )}
-          {view === "Mes vélos" && (
-            <BikesPage
-              bikes={bikes}
-              onBikesChange={setBikes}
-              rides={rides}
-              onAddRide={(bike) => {
-                setRideBike(bike.name);
-                setError("");
-                setAddOpen(true);
-              }}
-            />
-          )}
-          {view === "Vue d’ensemble" && (
+          <Routes>
+          <Route
+            path="/"
+            element={(
             <>
               <section
                 className={styles.garageBanner}
@@ -363,7 +371,7 @@ function App() {
                     appearance="transparent"
                     icon={<ArrowRight20Regular />}
                     iconPosition="after"
-                    onClick={() => navigateToView("Mes vélos")}
+                    onClick={() => navigate(viewPaths["Mes vélos"])}
                   >
                     Voir mes vélos
                   </Button>
@@ -383,7 +391,7 @@ function App() {
                       appearance="transparent"
                       icon={<ArrowRight20Regular />}
                       iconPosition="after"
-                      onClick={() => navigateToView("Sorties")}
+                      onClick={() => navigate(viewPaths.Sorties)}
                     >
                       Tout voir
                     </Button>
@@ -392,16 +400,86 @@ function App() {
                 </Card>
               </div>
             </>
-          )}
-          {view === "Sorties" && (
+            )}
+          />
+          <Route
+            path="/garage"
+            element={
+              <BikesPage
+                page="list"
+                bikes={bikes}
+                onBikesChange={setBikes}
+                rides={rides}
+                onAddRide={(bike) => {
+                  setRideBike(bike.name);
+                  setError("");
+                  setAddOpen(true);
+                }}
+              />
+            }
+          />
+          <Route
+            path="/garage/new"
+            element={
+              <BikesPage
+                page="form"
+                bikes={bikes}
+                onBikesChange={setBikes}
+                rides={rides}
+                onAddRide={(bike) => {
+                  setRideBike(bike.name);
+                  setError("");
+                  setAddOpen(true);
+                }}
+              />
+            }
+          />
+          <Route
+            path="/garage/:bikeId/edit"
+            element={
+              <BikesPage
+                page="form"
+                bikes={bikes}
+                onBikesChange={setBikes}
+                rides={rides}
+                onAddRide={(bike) => {
+                  setRideBike(bike.name);
+                  setError("");
+                  setAddOpen(true);
+                }}
+              />
+            }
+          />
+          <Route
+            path="/garage/:bikeId"
+            element={
+              <BikesPage
+                page="detail"
+                bikes={bikes}
+                onBikesChange={setBikes}
+                rides={rides}
+                onAddRide={(bike) => {
+                  setRideBike(bike.name);
+                  setError("");
+                  setAddOpen(true);
+                }}
+              />
+            }
+          />
+          <Route
+            path="/rides"
+            element={(
             <Card className={styles.dashboardCard}>
               <Text as="h2" size={400} weight="semibold">
                 Toutes les sorties
               </Text>
               {rideList(true)}
             </Card>
-          )}
-          {view === "Entretiens" && (
+            )}
+          />
+          <Route
+            path="/maintenance"
+            element={(
             <Card className={styles.dashboardCard}>
               <div className={styles.panelHeading}>
                 <Text as="h2" size={400} weight="semibold">
@@ -415,7 +493,10 @@ function App() {
               </div>
               {wearList()}
             </Card>
-          )}
+            )}
+          />
+          <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
         </main>
       </div>
       <Dialog open={addOpen} onOpenChange={(_, data) => setAddOpen(data.open)}>

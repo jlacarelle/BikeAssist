@@ -5,6 +5,7 @@ import {
   type FormEvent,
   type SetStateAction,
 } from "react";
+import { Navigate, useNavigate, useParams } from "react-router-dom";
 import { Button, Card, Text, Title1 } from "@fluentui/react-components";
 import {
   Add24Regular,
@@ -18,32 +19,34 @@ import BikeDetail from "./BikeDetail";
 import type { Bike, BikePart, BikeTab, Ride } from "../interfaces/bike";
 import { VeloService } from "../services/VeloService";
 
+type Page = "list" | "form" | "detail";
+
 type BikesPageProps = {
+  page: Page;
   bikes: Bike[];
   onBikesChange: Dispatch<SetStateAction<Bike[]>>;
   rides: Ride[];
   onAddRide: (bike: Bike) => void;
 };
 
-type Page = "list" | "form" | "detail";
-
 const number = (value: number) =>
   value.toLocaleString("fr-FR", { maximumFractionDigits: 1 });
 
 const BikesPage: FC<BikesPageProps> = ({
+  page,
   bikes,
   onBikesChange,
   rides,
   onAddRide,
 }) => {
   const styles = useDashboardStyles();
-  const [page, setPage] = useState<Page>("list");
-  const [selectedBikeId, setSelectedBikeId] = useState<string | null>(null);
-  const [editingBikeId, setEditingBikeId] = useState<string | null>(null);
+  const navigate = useNavigate();
+  const { bikeId } = useParams();
   const [selectedTab, setSelectedTab] = useState<BikeTab>("Aperçu");
   const [error, setError] = useState("");
 
-  const selectedBike = bikes.find((bike) => bike.id === selectedBikeId) ?? null;
+  const selectedBike = bikes.find((bike) => bike.id === bikeId) ?? null;
+  const editingBikeId = page === "form" ? bikeId : undefined;
   const selectedBikeRides = selectedBike
     ? rides.filter((ride) => ride.bikeId === selectedBike.id)
     : [];
@@ -51,11 +54,9 @@ const BikesPage: FC<BikesPageProps> = ({
     ? selectedBike.distance +
       selectedBikeRides.reduce((total, ride) => total + ride.distance, 0)
     : 0;
-
   function openForm(bike?: Bike) {
-    setEditingBikeId(bike?.id ?? null);
     setError("");
-    setPage("form");
+    navigate(bike ? `/garage/${bike.id}/edit` : "/garage/new");
   }
 
   function saveBike(
@@ -69,9 +70,15 @@ const BikesPage: FC<BikesPageProps> = ({
     const savedBike = veloService.createBike(bike, parts);
     onBikesChange(veloService.getAllBikes());
 
-    setSelectedBikeId(savedBike.id);
-    setPage(editingBikeId ? "detail" : "list");
+    navigate(editingBikeId ? `/garage/${savedBike.id}` : "/garage");
     setError("");
+  }
+
+  if (
+    (page === "detail" || editingBikeId !== undefined) &&
+    !selectedBike
+  ) {
+    return <Navigate to="/garage" replace />;
   }
 
   return (
@@ -83,7 +90,9 @@ const BikesPage: FC<BikesPageProps> = ({
               appearance="transparent"
               className={styles.backLink}
               icon={<ArrowLeft20Regular />}
-              onClick={() => setPage("list")}
+              onClick={() =>
+                navigate(editingBikeId ? `/garage/${editingBikeId}` : "/garage")
+              }
             >
               Retour à mon garage
             </Button>
@@ -188,9 +197,8 @@ const BikesPage: FC<BikesPageProps> = ({
                     <Button
                       appearance="primary"
                       onClick={() => {
-                        setSelectedBikeId(bike.id);
                         setSelectedTab("Aperçu");
-                        setPage("detail");
+                        navigate(`/garage/${bike.id}`);
                       }}
                     >
                       Voir le détail
@@ -212,9 +220,11 @@ const BikesPage: FC<BikesPageProps> = ({
         <AddBikeForm
           initialBike={bikes?.find((bike) => bike.id === editingBikeId) || null}
           error={error}
-          isEditing={editingBikeId !== null}
+          isEditing={Boolean(editingBikeId)}
           onSubmit={saveBike}
-          onCancel={() => setPage(editingBikeId ? "detail" : "list")}
+          onCancel={() =>
+            navigate(editingBikeId ? `/garage/${editingBikeId}` : "/garage")
+          }
         />
       )}
 
