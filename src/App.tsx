@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Navigate, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import {
   Badge,
   Button,
@@ -33,13 +34,26 @@ import SideMenu, { type SideMenuView } from "./components/SideMenu";
 import type { Bike, Ride } from "./interfaces/bike";
 
 type View = SideMenuView;
+const viewPaths: Record<View, string> = {
+  "Vue d’ensemble": "/",
+  "Mes vélos": "/bikes",
+  Sorties: "/rides",
+  Entretiens: "/maintenance",
+};
+
+const pathViews: Record<string, View> = Object.fromEntries(
+  Object.entries(viewPaths).map(([view, path]) => [path, view]),
+) as Record<string, View>;
+
 const number = (value: number) =>
   value.toLocaleString("fr-FR", { maximumFractionDigits: 1 });
 function App() {
   useGlobalStyles();
   const styles = useDashboardStyles();
   const serviceScope = useServiceScope();
-  const [view, setView] = useState<View>("Vue d’ensemble");
+  const location = useLocation();
+  const navigate = useNavigate();
+  const view = pathViews[location.pathname] ?? "Vue d’ensemble";
   const [bikes, setBikes] = useState<Bike[]>(() =>
     serviceScope.veloService.getAllBikes(),
   );
@@ -64,7 +78,7 @@ function App() {
   );
 
   function navigateToView(nextView: View) {
-    setView(nextView);
+    navigate(viewPaths[nextView]);
   }
 
   function saveRide(ride: {
@@ -89,6 +103,15 @@ function App() {
     setRides(serviceScope.rideService.getAllRides());
     setBikes(serviceScope.veloService.getAllBikes());
     setAddOpen(false);
+  }
+
+  function deleteRide(rideId: string) {
+    serviceScope.rideService.deleteRide(rideId);
+    setRides(serviceScope.rideService.getAllRides());
+    setBikes(serviceScope.veloService.getAllBikes());
+    setSelectedRide((currentRide) =>
+      currentRide?.id === rideId ? null : currentRide,
+    );
   }
 
   function rideList(all = false) {
@@ -218,7 +241,10 @@ function App() {
               </Button>
             </div>
           )}
-          {view === "Mes vélos" && (
+          <Routes>
+            <Route
+              path="/bikes"
+              element={
             <BikesPage
               bikes={bikes}
               onBikesChange={setBikes}
@@ -235,9 +261,12 @@ function App() {
                 setAddOpen(true);
               }}
             />
-          )}
-          {view === "Vue d’ensemble" && (
-            <>
+              }
+            />
+            <Route
+              path="/"
+              element={
+              <>
               <section
                 className={styles.garageBanner}
                 aria-label="Bilan annuel"
@@ -363,13 +392,23 @@ function App() {
                   {rideList()}
                 </Card>
               </div>
-            </>
-          )}
-          {view === "Sorties" && (
-            <RidesPage rides={rides} onSelectRide={setSelectedRide} />
-          )}
-          {view === "Entretiens" && (
-            <Card className={styles.dashboardCard}>
+              </>
+              }
+            />
+            <Route
+              path="/rides"
+              element={
+                <RidesPage
+                  rides={rides}
+                  onSelectRide={setSelectedRide}
+                  onDeleteRide={deleteRide}
+                />
+              }
+            />
+            <Route
+              path="/maintenance"
+              element={
+                <Card className={styles.dashboardCard}>
               <div className={styles.panelHeading}>
                 <Text as="h2" size={400} weight="semibold">
                   Suivi des composants
@@ -381,8 +420,11 @@ function App() {
                 )}
               </div>
               {wearList()}
-            </Card>
-          )}
+                </Card>
+              }
+            />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
         </main>
       </div>
       {addOpen && (

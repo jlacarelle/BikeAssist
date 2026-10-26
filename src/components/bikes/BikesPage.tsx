@@ -63,10 +63,7 @@ const BikesPage: FC<BikesPageProps> = ({
   const selectedBikeRides = selectedBike
     ? rides.filter((ride) => ride.bikeId === selectedBike.id)
     : [];
-  const selectedBikeDistance = selectedBike
-    ? selectedBike.distance +
-      selectedBikeRides.reduce((total, ride) => total + ride.distance, 0)
-    : 0;
+
 
   function openForm(bike?: Bike) {
     setEditingBikeId(bike?.id ?? null);
@@ -171,11 +168,6 @@ const BikesPage: FC<BikesPageProps> = ({
         ) : (
           <div className={styles.bikesGrid}>
             {bikes.map((bike) => {
-              const mileage =
-                bike.distance +
-                rides
-                  .filter((ride) => ride.bikeId === bike.id)
-                  .reduce((total, ride) => total + ride.distance, 0);
               //   const attention = bike.status
               //     .toLowerCase()
               //     .includes("surveiller");
@@ -202,7 +194,7 @@ const BikesPage: FC<BikesPageProps> = ({
                   </div>
                   <div className={styles.bikeCardMetric}>
                     <Text size={600} weight="bold">
-                      {number(mileage)} km
+                      {number(bike.distance)} km
                     </Text>
                     <Text className={styles.muted}>au compteur</Text>
                   </div>
@@ -251,7 +243,7 @@ const BikesPage: FC<BikesPageProps> = ({
         <BikeDetail
           bike={selectedBike}
           rides={selectedBikeRides}
-          totalDistance={selectedBikeDistance}
+          totalDistance={selectedBike.distance}
           selectedTab={selectedTab}
           onTabChange={setSelectedTab}
           onEdit={() => openForm(selectedBike)}

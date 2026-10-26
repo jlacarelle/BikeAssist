@@ -127,6 +127,8 @@ export const useDashboardStyles = makeStyles({
     borderBottom: `1px solid ${tokens.colorNeutralStroke3}`, borderRadius: 0, textAlign: 'left',
     fontSize: '11px', fontWeight: tokens.fontWeightRegular, ':last-child': { borderBottom: 'none' },
   },
+  rideSelectButton: { flex: 1, minWidth: 0, justifyContent: 'flex-start', padding: 0, borderRadius: 0, textAlign: 'left' },
+  rideDeleteButton: { color: tokens.colorPaletteRedForeground1, flexShrink: 0, ':hover': { color: tokens.colorPaletteRedForeground1 } },
   rideDescription: { display: 'block', flex: 1, minWidth: 0, '& > span:first-child': { display: 'block', overflowWrap: 'anywhere' } },
   rideDistance: { display: 'block', textAlign: 'right', flexShrink: 0, '& > span': { display: 'block' } },
   bikesGrid: { display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '18px', [mobile]: { gridTemplateColumns: '1fr' } },
