@@ -30,8 +30,10 @@ import { useServiceScope } from "./common/useServiceScope";
 import BikesPage from "./components/bikes/BikesPage";
 import AddRideDialog from "./components/rides/AddRideDialog";
 import RidesPage from "./components/rides/RidesPage";
+import MaintenancePage from "./components/maintenance/MaintenancePage";
 import SideMenu, { type SideMenuView } from "./components/SideMenu";
-import type { Bike, Ride } from "./interfaces/bike";
+import type { Bike, MaintenanceEntry, Ride } from "./interfaces/bike";
+import type { PartReplacement } from "./services/MaintenanceService";
 
 type View = SideMenuView;
 const viewPaths: Record<View, string> = {
@@ -60,6 +62,9 @@ function App() {
   const [rides, setRides] = useState<Ride[]>(() =>
     serviceScope.rideService.getAllRides(),
   );
+  const [maintenanceEntries, setMaintenanceEntries] = useState<
+    MaintenanceEntry[]
+  >(() => serviceScope.maintenanceService.getAllEntries());
   const [addOpen, setAddOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
   const [selectedRide, setSelectedRide] = useState<Ride | null>(null);
@@ -112,6 +117,12 @@ function App() {
     setSelectedRide((currentRide) =>
       currentRide?.id === rideId ? null : currentRide,
     );
+  }
+
+  function replacePart(replacement: PartReplacement) {
+    serviceScope.maintenanceService.replacePart(replacement);
+    setMaintenanceEntries(serviceScope.maintenanceService.getAllEntries());
+    setBikes(serviceScope.veloService.getAllBikes());
   }
 
   function rideList(all = false) {
@@ -228,17 +239,19 @@ function App() {
                       : "L’usure de vos pièces, en un coup d’œil."}
                 </Text>
               </div>
-              <Button
-                appearance="primary"
-                icon={<Add24Regular />}
-                disabled={bikes.length === 0}
-                onClick={() => {
-                  setInitialRideBike(bikes[0]?.name ?? "");
-                  setAddOpen(true);
-                }}
-              >
-                Ajouter une sortie
-              </Button>
+              {view !== "Entretiens" && (
+                <Button
+                  appearance="primary"
+                  icon={<Add24Regular />}
+                  disabled={bikes.length === 0}
+                  onClick={() => {
+                    setInitialRideBike(bikes[0]?.name ?? "");
+                    setAddOpen(true);
+                  }}
+                >
+                  Ajouter une sortie
+                </Button>
+              )}
             </div>
           )}
           <Routes>
@@ -249,6 +262,7 @@ function App() {
               bikes={bikes}
               onBikesChange={setBikes}
               rides={rides}
+              maintenanceEntries={maintenanceEntries}
               onDeleteBike={(bikeId) => {
                 serviceScope.veloService.deleteBike(bikeId);
                 setBikes(serviceScope.veloService.getAllBikes());
@@ -408,19 +422,11 @@ function App() {
             <Route
               path="/maintenance"
               element={
-                <Card className={styles.dashboardCard}>
-              <div className={styles.panelHeading}>
-                <Text as="h2" size={400} weight="semibold">
-                  Suivi des composants
-                </Text>
-                {partsToWatch.length > 0 && (
-                  <Badge color="warning" appearance="tint">
-                    {partsToWatch.length} à surveiller
-                  </Badge>
-                )}
-              </div>
-              {wearList()}
-                </Card>
+                <MaintenancePage
+                  bikes={bikes}
+                  entries={maintenanceEntries}
+                  onReplacePart={replacePart}
+                />
               }
             />
             <Route path="*" element={<Navigate to="/" replace />} />

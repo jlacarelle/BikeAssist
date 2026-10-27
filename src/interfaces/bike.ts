@@ -27,7 +27,21 @@ export interface Bike {
     lastService?: Date;
 }
 
+export interface MaintenanceEntry {
+    id: string;
+    bikeId: string;
+    bikeName: string;
+    bikeDistance: number;
+    partId: number;
+    partName: string;
+    previousReference: string;
+    previousDistance: number;
+    newReference: string;
+    newDistance: number;
+    date: string;
+    note: string;
+}
+
 
 export type BikeTab = "Aperçu" | "Pièces" | "Sorties" | "Entretiens";
-
 

@@ -93,4 +93,24 @@ export class VeloService {
     this.materielService.updatePartsKms(bikeId, distance);
     this.updateBikeDistance(bikeId, distance);
   }
+
+  public replacePart(
+    bikeId: string,
+    partId: number,
+    reference: string,
+    distance: number,
+  ): void {
+    const parts = this.materielService.getSavedParts();
+    const part = parts.find(
+      (savedPart) => savedPart.bikeId === bikeId && savedPart.id === partId,
+    );
+    if (!part) {
+      throw new Error("La pièce sélectionnée n’existe plus.");
+    }
+
+    part.reference = reference;
+    part.distance = distance;
+    part.isActif = true;
+    this.materielService.updateSavedParts(parts);
+  }
 }

@@ -14,11 +14,17 @@ import {
   Sport24Regular,
 } from "@fluentui/react-icons";
 import { useDashboardStyles } from "../../App.styles";
-import type { Bike, BikeTab, Ride } from "../../interfaces/bike";
+import type {
+  Bike,
+  BikeTab,
+  MaintenanceEntry,
+  Ride,
+} from "../../interfaces/bike";
 
 type BikeDetailProps = {
   bike: Bike;
   rides: Ride[];
+  maintenanceEntries: MaintenanceEntry[];
   totalDistance: number;
   selectedTab: BikeTab;
   onTabChange: (tab: BikeTab) => void;
@@ -32,6 +38,7 @@ const number = (value: number) =>
 function BikeDetail({
   bike,
   rides,
+  maintenanceEntries,
   totalDistance,
   selectedTab,
   onTabChange,
@@ -117,35 +124,42 @@ function BikeDetail({
   }
 
   function serviceHistory() {
+    if (maintenanceEntries.length === 0) {
+      return (
+        <Text className={styles.muted}>
+          Aucun remplacement enregistré pour ce vélo.
+        </Text>
+      );
+    }
+
     return (
       <div className={styles.serviceHistory}>
-        <div className={styles.serviceEntry}>
-          <Text weight="semibold">23</Text>
-          <Text className={styles.muted}>SEPT.</Text>
-          <span className={styles.serviceDot} />
-          <div>
-            <Text weight="semibold">Révision complète</Text>
-            <Text className={styles.muted}>Contrôle de la transmission</Text>
+        {maintenanceEntries.map((entry) => (
+          <div className={styles.serviceEntry} key={entry.id}>
+            <Text weight="semibold">
+              {new Date(`${entry.date}T12:00:00`).toLocaleDateString("fr-FR", {
+                day: "2-digit",
+              })}
+            </Text>
+            <Text className={styles.muted}>
+              {new Date(`${entry.date}T12:00:00`)
+                .toLocaleDateString("fr-FR", { month: "short" })
+                .replace(".", "")
+                .toUpperCase()}
+            </Text>
+            <span className={styles.serviceDot} />
+            <div className={styles.maintenanceHistoryDetail}>
+              <Text weight="semibold">{entry.partName} remplacé</Text>
+              <Text className={styles.muted}>
+                {entry.previousReference || "Ancien modèle non renseigné"} →{" "}
+                {entry.newReference} · vélo à {number(entry.bikeDistance)} km
+              </Text>
+              {entry.note && (
+                <Text className={styles.muted}>{entry.note}</Text>
+              )}
+            </div>
           </div>
-        </div>
-        <div className={styles.serviceEntry}>
-          <Text weight="semibold">30</Text>
-          <Text className={styles.muted}>AOÛT</Text>
-          <span className={styles.serviceDot} />
-          <div>
-            <Text weight="semibold">Chaîne remplacée</Text>
-            <Text className={styles.muted}>Shimano CN-M7100</Text>
-          </div>
-        </div>
-        <div className={styles.serviceEntry}>
-          <Text weight="semibold">12</Text>
-          <Text className={styles.muted}>AVR.</Text>
-          <span className={styles.serviceDot} />
-          <div>
-            <Text weight="semibold">Vélo ajouté au garage</Text>
-            <Text className={styles.muted}>{bike.addedOn}</Text>
-          </div>
-        </div>
+        ))}
       </div>
     );
   }

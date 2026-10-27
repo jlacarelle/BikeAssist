@@ -28,12 +28,19 @@ import { useDashboardStyles } from "../../App.styles";
 import { useServiceScope } from "../../common/useServiceScope";
 import AddBikeForm from "./AddBikeForm";
 import BikeDetail from "./BikeDetail";
-import type { Bike, BikePart, BikeTab, Ride } from "../../interfaces/bike";
+import type {
+  Bike,
+  BikePart,
+  BikeTab,
+  MaintenanceEntry,
+  Ride,
+} from "../../interfaces/bike";
 
 type BikesPageProps = {
   bikes: Bike[];
   onBikesChange: Dispatch<SetStateAction<Bike[]>>;
   rides: Ride[];
+  maintenanceEntries: MaintenanceEntry[];
   onAddRide: (bike: Bike) => void;
   onDeleteBike: (bikeId: string) => void;
 };
@@ -47,6 +54,7 @@ const BikesPage: FC<BikesPageProps> = ({
   bikes,
   onBikesChange,
   rides,
+  maintenanceEntries,
   onAddRide,
   onDeleteBike,
 }) => {
@@ -62,6 +70,9 @@ const BikesPage: FC<BikesPageProps> = ({
   const selectedBike = bikes.find((bike) => bike.id === selectedBikeId) ?? null;
   const selectedBikeRides = selectedBike
     ? rides.filter((ride) => ride.bikeId === selectedBike.id)
+    : [];
+  const selectedBikeMaintenanceEntries = selectedBike
+    ? maintenanceEntries.filter((entry) => entry.bikeId === selectedBike.id)
     : [];
 
 
@@ -243,6 +254,7 @@ const BikesPage: FC<BikesPageProps> = ({
         <BikeDetail
           bike={selectedBike}
           rides={selectedBikeRides}
+          maintenanceEntries={selectedBikeMaintenanceEntries}
           totalDistance={selectedBike.distance}
           selectedTab={selectedTab}
           onTabChange={setSelectedTab}
