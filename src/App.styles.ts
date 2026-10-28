@@ -164,7 +164,7 @@ export const useDashboardStyles = makeStyles({
   formSectionHeading: { display: 'flex', alignItems: 'baseline', gap: '10px', flexWrap: 'wrap' },
   formSectionDivider: { height: '1px', backgroundColor: tokens.colorNeutralStroke2, margin: '2px 0' },
   bikePartFields: { display: 'flex', flexDirection: 'column', gap: '12px' },
-  bikePartFormRow: { display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gap: '12px', [mobile]: { gridTemplateColumns: '1fr' } },
+  bikePartFormRow: { display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', gap: '12px' },
   bikeFormActions: { display: 'flex', justifyContent: 'flex-end', gap: '8px', borderTop: `1px solid ${tokens.colorNeutralStroke2}`, paddingTop: '14px', marginTop: '2px', [mobile]: { flexWrap: 'wrap' } },
   bikeFormAside: { display: 'flex', flexDirection: 'column', gap: '12px' },
   formAsideCard: { padding: '16px', gap: '9px', border: `1px solid ${tokens.colorNeutralStroke2}`, boxShadow: tokens.shadow2, borderRadius: tokens.borderRadiusLarge, '& > span:nth-child(2)': { fontSize: '12px' }, '& > span:last-child': { fontSize: '11px', lineHeight: '1.5' } },

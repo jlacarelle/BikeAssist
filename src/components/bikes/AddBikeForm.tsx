@@ -66,9 +66,8 @@ const AddBikeForm: FC<AddBikeFormProps> = ({
             distance: 0,
             isActif: true,
             id: data.id,
-
             maxDistance: data.max_km,
-          }) as BikePart,
+          }),
       ) ?? []
     );
   };
@@ -219,38 +218,16 @@ const AddBikeForm: FC<AddBikeFormProps> = ({
           <div className={styles.bikePartFields}>
             {materiel?.datas.map((data) => (
               <div className={styles.bikePartFormRow} key={data.id}>
-                <Field label={`${data.name} · référence / gamme`}>
-                  <Input
-                    value={
-                      bike.parts?.find((part) => part.id === data.id)
-                        ?.reference ??
-                      data.example ??
-                      ""
-                    }
-                    onChange={(_, inputData) =>
-                      setBike((current) => ({
-                        ...current,
-                        parts: current.parts.map((part) =>
-                          part.id === data.id
-                            ? { ...part, reference: inputData.value }
-                            : part,
-                        ),
-                      }))
-                    }
-                    placeholder={`Ex. ${data.example}`}
-                  />
-                </Field>
                 <Field
-                  label={`Remplacement conseillé après (km)` }
+                  label={`${data.name} · kilométrage maximal conseillé (km)`}
                 >
                   <Input
                     type="number"
-                    min={1}
+                    min="1"
                     value={
                       bike?.parts
                         ?.find((part) => part.id === data.id)
                         ?.maxDistance?.toString() ?? String(data.max_km)
-                   //   String(data.max_km)
                     }
                     onChange={(_, inputData) =>
                       setBike((current) => ({

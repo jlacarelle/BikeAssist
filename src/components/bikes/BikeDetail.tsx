@@ -73,9 +73,6 @@ function BikeDetail({
                   {attention ? "À prévoir" : "Bon état"}
                 </Badge>
               </div>
-              <Text className={styles.muted}>
-                {part.reference || "Référence non renseignée"}
-              </Text>
               <ProgressBar
                 value={progress}
                 color={attention ? "warning" : "success"}
@@ -151,8 +148,9 @@ function BikeDetail({
             <div className={styles.maintenanceHistoryDetail}>
               <Text weight="semibold">{entry.partName} remplacé</Text>
               <Text className={styles.muted}>
-                {entry.previousReference || "Ancien modèle non renseigné"} →{" "}
-                {entry.newReference} · vélo à {number(entry.bikeDistance)} km
+                {number(entry.previousDistance)} km →{" "}
+                {number(entry.newDistance)} km · vélo à{" "}
+                {number(entry.bikeDistance)} km
               </Text>
               {entry.note && (
                 <Text className={styles.muted}>{entry.note}</Text>

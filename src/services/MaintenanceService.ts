@@ -5,7 +5,7 @@ import { VeloService } from "./VeloService";
 export type PartReplacement = {
   bikeId: string;
   partId: number;
-  newReference: string;
+  newMaxDistance: number;
   newDistance: number;
   date: string;
   note: string;
@@ -20,19 +20,42 @@ export class MaintenanceService {
 
   public getAllEntries(): MaintenanceEntry[] {
     const entries = localStorage.getItem(Constants.MAINTENANCE_ENTRIES_KEY);
-    return entries ? JSON.parse(entries) : [];
+    if (!entries) {
+      return [];
+    }
+
+    const storedEntries: Array<
+      MaintenanceEntry & { previousReference?: string; newReference?: string }
+    > = JSON.parse(entries);
+    const normalizedEntries = storedEntries.map((entry) => {
+      const normalizedEntry = { ...entry };
+      delete normalizedEntry.previousReference;
+      delete normalizedEntry.newReference;
+      return normalizedEntry;
+    });
+
+    if (JSON.stringify(normalizedEntries) !== entries) {
+      localStorage.setItem(
+        Constants.MAINTENANCE_ENTRIES_KEY,
+        JSON.stringify(normalizedEntries),
+      );
+    }
+
+    return normalizedEntries;
   }
 
   public replacePart(replacement: PartReplacement): MaintenanceEntry {
     const bike = this.veloService.getBikeById(replacement.bikeId);
     const part = bike?.parts.find((item) => item.id === replacement.partId);
-    const newReference = replacement.newReference.trim();
 
     if (!bike || !part) {
       throw new Error("Le vélo ou la pièce sélectionnée n’existe plus.");
     }
-    if (!newReference) {
-      throw new Error("Le nouveau modèle est obligatoire.");
+    if (
+      !Number.isFinite(replacement.newMaxDistance) ||
+      replacement.newMaxDistance <= 0
+    ) {
+      throw new Error("Le kilométrage maximal conseillé doit être supérieur à zéro.");
     }
     if (!Number.isFinite(replacement.newDistance) || replacement.newDistance < 0) {
       throw new Error("Le kilométrage de la pièce doit être un nombre positif.");
@@ -48,9 +71,7 @@ export class MaintenanceService {
       bikeDistance: bike.distance,
       partId: part.id,
       partName: part.name,
-      previousReference: part.reference,
       previousDistance: part.distance,
-      newReference,
       newDistance: replacement.newDistance,
       date: replacement.date,
       note: replacement.note.trim(),
@@ -59,7 +80,7 @@ export class MaintenanceService {
     this.veloService.replacePart(
       bike.id,
       part.id,
-      newReference,
+      replacement.newMaxDistance,
       replacement.newDistance,
     );
     const entries = this.getAllEntries();

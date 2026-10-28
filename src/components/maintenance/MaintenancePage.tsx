@@ -16,7 +16,6 @@ import {
 } from "@fluentui/react-components";
 import { Settings24Regular, WrenchScrewdriver20Regular } from "@fluentui/react-icons";
 import { useState, type FormEvent } from "react";
-import materiel from "../../data/reference/materiel.json";
 import type { Bike, BikePart, MaintenanceEntry } from "../../interfaces/bike";
 import type { PartReplacement } from "../../services/MaintenanceService";
 import { useDashboardStyles } from "../../App.styles";
@@ -46,21 +45,15 @@ function MaintenancePage({
     bike: Bike;
     part: BikePart;
   } | null>(null);
-  const [newReference, setNewReference] = useState("");
+  const [newMaxDistance, setNewMaxDistance] = useState("0");
   const [newDistance, setNewDistance] = useState("0");
   const [date, setDate] = useState(localDateInputValue);
   const [note, setNote] = useState("");
   const [error, setError] = useState("");
 
-  const modelSuggestions = selectedPart
-    ? materiel
-        .filter((item) => item.id === selectedPart.part.id)
-        .map((item) => item.example)
-    : [];
-
   function openReplacement(bike: Bike, part: BikePart) {
     setSelectedPart({ bike, part });
-    setNewReference("");
+    setNewMaxDistance(String(part.maxDistance));
     setNewDistance("0");
     setDate(localDateInputValue());
     setNote("");
@@ -71,9 +64,14 @@ function MaintenancePage({
     event.preventDefault();
     if (!selectedPart) return;
 
+    const maxDistance = Number(newMaxDistance);
     const distance = Number(newDistance);
-    if (!newReference.trim()) {
-      setError("Renseignez le modèle de la pièce neuve.");
+    if (
+      !newMaxDistance.trim() ||
+      !Number.isFinite(maxDistance) ||
+      maxDistance <= 0
+    ) {
+      setError("Le kilométrage maximal conseillé doit être supérieur à zéro.");
       return;
     }
     if (!newDistance.trim() || !Number.isFinite(distance) || distance < 0) {
@@ -89,7 +87,7 @@ function MaintenancePage({
       onReplacePart({
         bikeId: selectedPart.bike.id,
         partId: selectedPart.part.id,
-        newReference,
+        newMaxDistance: maxDistance,
         newDistance: distance,
         date,
         note,
@@ -167,8 +165,8 @@ function MaintenancePage({
                         <div className={styles.maintenancePartInfo}>
                           <Text weight="semibold">{part.name}</Text>
                           <Text className={styles.muted}>
-                            {part.reference || "Modèle non renseigné"} ·{" "}
-                            {number(part.distance)} km
+                            {number(part.distance)} km parcourus ·{" "}
+                            {number(part.maxDistance)} km conseillés
                           </Text>
                         </div>
                         <ProgressBar
@@ -237,9 +235,8 @@ function MaintenancePage({
                         {entry.partName} remplacé · {entry.bikeName}
                       </Text>
                       <Text className={styles.muted}>
-                        {entry.previousReference || "Ancien modèle non renseigné"}{" "}
-                        ({number(entry.previousDistance)} km) →{" "}
-                        {entry.newReference} ({number(entry.newDistance)} km)
+                        {number(entry.previousDistance)} km →{" "}
+                        {number(entry.newDistance)} km
                       </Text>
                       <Text className={styles.muted}>
                         Vélo à {number(entry.bikeDistance)} km ·{" "}
@@ -274,32 +271,21 @@ function MaintenancePage({
                   {selectedPart?.part.name} · {selectedPart?.bike.name}
                 </Text>
                 <Text>
-                  Ancien modèle :{" "}
-                  {selectedPart?.part.reference || "Non renseigné"} ·{" "}
-                  {number(selectedPart?.part.distance ?? 0)} km parcourus
+                  {number(selectedPart?.part.distance ?? 0)} km parcourus ·{" "}
+                  {number(selectedPart?.part.maxDistance ?? 0)} km conseillés
                 </Text>
-                <Field label="Nouveau modèle / référence" required>
-                  <Input
-                    list={
-                      selectedPart
-                        ? `maintenance-models-${selectedPart.part.id}`
-                        : undefined
-                    }
-                    value={newReference}
-                    onChange={(_, data) => setNewReference(data.value)}
-                    placeholder="Choisir ou saisir un modèle"
-                    required
-                  />
-                  {selectedPart && (
-                    <datalist id={`maintenance-models-${selectedPart.part.id}`}>
-                      {modelSuggestions.map((model) => (
-                        <option key={model} value={model} />
-                      ))}
-                    </datalist>
-                  )}
-                </Field>
                 <div className={styles.formColumns}>
-                  <Field label="Kilométrage de la pièce neuve (km)" required>
+                  <Field label="Kilométrage maximal conseillé (km)" required>
+                    <Input
+                      type="number"
+                      min="1"
+                      step="1"
+                      value={newMaxDistance}
+                      onChange={(_, data) => setNewMaxDistance(data.value)}
+                      required
+                    />
+                  </Field>
+                  <Field label="Kilométrage actuel (km)" required>
                     <Input
                       type="number"
                       min="0"
@@ -309,15 +295,15 @@ function MaintenancePage({
                       required
                     />
                   </Field>
-                  <Field label="Date de remplacement" required>
-                    <Input
-                      type="date"
-                      value={date}
-                      onChange={(_, data) => setDate(data.value)}
-                      required
-                    />
-                  </Field>
                 </div>
+                <Field label="Date de remplacement" required>
+                  <Input
+                    type="date"
+                    value={date}
+                    onChange={(_, data) => setDate(data.value)}
+                    required
+                  />
+                </Field>
                 <Field label="Note (facultatif)">
                   <Textarea
                     value={note}

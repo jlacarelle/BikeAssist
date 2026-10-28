@@ -6,11 +6,10 @@ export interface Version {
 
 export interface SpecsMeteriel{
     id: number;
-    name?:string;
+    name: string;
     min_km: number;
     max_km: number;
     note: string;
-    example?: string;
 }
 
 export interface Gamme {
@@ -22,11 +21,9 @@ export interface Gamme {
 export interface Materiel {
     id: number;
     name: string;
-    example: string;
 }
 
 export interface MaterielAvecGamme {
     gamme: string;
     datas: SpecsMeteriel[];
 }
-

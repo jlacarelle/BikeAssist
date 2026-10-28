@@ -15,7 +15,22 @@ export class MaterielService {
 
     public getSavedParts(): BikePart[] {
         const bikeParts = localStorage.getItem(Constants.BIKE_PARTS_KEY);
-        return bikeParts ? JSON.parse(bikeParts) : [];
+        if (!bikeParts) {
+            return [];
+        }
+
+        const parts: Array<BikePart & { reference?: string }> = JSON.parse(bikeParts);
+        const normalizedParts = parts.map((part) => {
+            const normalizedPart = { ...part };
+            delete normalizedPart.reference;
+            return normalizedPart;
+        });
+
+        if (JSON.stringify(normalizedParts) !== bikeParts) {
+            this.updateSavedParts(normalizedParts);
+        }
+
+        return normalizedParts;
     }
 
     public getSavedPartsByBike(bikeId: string): BikePart[] {
@@ -46,22 +61,22 @@ export class MaterielService {
             gamme: spec.gamme,
             datas: spec.datas.map((data) => {
                 const piece = materiel.find((item) => item.id === data.id);
+                if (!piece) {
+                    throw new Error(`Le matériel ${data.id} est introuvable.`);
+                }
                 return {
                     id: data.id,
                     min_km: data.min_km,
                     max_km: data.max_km,
                     note: data.note,
-                    name: piece?.name,
-                    example: piece?.example,
+                    name: piece.name,
                 };
             })
         };
     }
 
     public updatePartsKms(bikeId: string, distance: number) {
-        // Implementation to update parts' kilometers based on the bike's distance
-        const bikeParts = localStorage.getItem(Constants.BIKE_PARTS_KEY);
-        const parsedBikeParts: BikePart[] = bikeParts ? JSON.parse(bikeParts) : [];
+        const parsedBikeParts = this.getSavedParts();
 
         parsedBikeParts.forEach(part => {
             if (part.bikeId === bikeId) {

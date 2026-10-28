@@ -15,8 +15,25 @@ export class VeloService {
 
     const parsedBikeParts: BikePart[] = this.materielService.getSavedParts();
     const parsedRides: Ride[] = rides ? JSON.parse(rides) : [];
+    const storedBikes: Array<
+      Omit<Bike, "parts"> & {
+        parts?: Array<BikePart & { reference?: string }>;
+      }
+    > = bikes ? JSON.parse(bikes) : [];
+    const parsedBikes: Bike[] = storedBikes.map((bike) => ({
+      ...bike,
+      parts: (bike.parts ?? []).map((part) => {
+        const normalizedPart: BikePart & { reference?: string } = {
+          ...part,
+        };
+        delete normalizedPart.reference;
+        return normalizedPart;
+      }),
+    }));
 
-    const parsedBikes: Bike[] = bikes ? JSON.parse(bikes) : [];
+    if (bikes && JSON.stringify(parsedBikes) !== bikes) {
+      localStorage.setItem(Constants.BIKES_KEY, JSON.stringify(parsedBikes));
+    }
 
     parsedBikes.forEach((bike) => {
       bike.rides = parsedRides.filter((ride) => ride.bikeId === bike.id);
@@ -97,7 +114,7 @@ export class VeloService {
   public replacePart(
     bikeId: string,
     partId: number,
-    reference: string,
+    maxDistance: number,
     distance: number,
   ): void {
     const parts = this.materielService.getSavedParts();
@@ -108,7 +125,7 @@ export class VeloService {
       throw new Error("La pièce sélectionnée n’existe plus.");
     }
 
-    part.reference = reference;
+    part.maxDistance = maxDistance;
     part.distance = distance;
     part.isActif = true;
     this.materielService.updateSavedParts(parts);

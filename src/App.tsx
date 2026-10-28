@@ -168,7 +168,7 @@ function App() {
             <div>
               <Text weight="semibold">{part.name}</Text>
               <Text className={mergeClasses(styles.muted, styles.small)}>
-                {bike.name} · {part.reference || bike.brand}
+                {bike.name} · {bike.brand}
               </Text>
             </div>
             <ProgressBar
