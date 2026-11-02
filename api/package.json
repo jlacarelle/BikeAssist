@@ -1,0 +1,17 @@
+{
+  "name": "bikeassist-api",
+  "version": "1.0.0",
+  "private": true,
+  "description": "API Azure Functions (Static Web Apps managed functions) de BikeAssist",
+  "scripts": {
+    "db:init": "node scripts/init-db.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "type": "commonjs",
+  "license": "UNLICENSED",
+  "dependencies": {
+    "mssql": "^12.7.13"
+  }
+}

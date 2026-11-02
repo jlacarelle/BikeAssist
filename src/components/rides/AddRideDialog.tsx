@@ -19,6 +19,7 @@ import {
 } from "@fluentui/react-icons";
 import { useDashboardStyles } from "../../App.styles";
 import type { Bike } from "../../interfaces/bike";
+import { getErrorMessage } from "../../services/apiClient";
 
 type AddRideDialogProps = {
   open: boolean;
@@ -30,7 +31,7 @@ type AddRideDialogProps = {
     bikeName: string;
     date: string;
     distance: number;
-  }) => void;
+  }) => Promise<void>;
 };
 
 const getTodayInputDate = () => {
@@ -54,9 +55,11 @@ const AddRideDialog: FC<AddRideDialogProps> = ({
   const [rideDistance, setRideDistance] = useState("");
   const [rideDate, setRideDate] = useState(getTodayInputDate);
   const [error, setError] = useState("");
+  const [saving, setSaving] = useState(false);
 
-  function submitRide(event: FormEvent<HTMLFormElement>) {
+  async function submitRide(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (saving) return;
     const distance = Number(rideDistance.replace(",", "."));
     const bikeExists = bikes.some((bike) => bike.name === rideBike);
     if (
@@ -66,17 +69,22 @@ const AddRideDialog: FC<AddRideDialogProps> = ({
       !Number.isFinite(distance) ||
       distance <= 0
     ) {
-      setError(
-        "Renseignez un nom, une date et une distance positive",
-      );
+      setError("Renseignez un nom, une date et une distance positive");
       return;
     }
-    onSubmit({
-      name: rideName.trim(),
-      bikeName: rideBike,
-      date: rideDate,
-      distance
-    });
+    setError("");
+    setSaving(true);
+    try {
+      await onSubmit({
+        name: rideName.trim(),
+        bikeName: rideBike,
+        date: rideDate,
+        distance,
+      });
+    } catch (submissionError) {
+      setError(getErrorMessage(submissionError));
+      setSaving(false);
+    }
   }
 
   return (
@@ -152,6 +160,7 @@ const AddRideDialog: FC<AddRideDialogProps> = ({
                 type="submit"
                 appearance="primary"
                 icon={<CheckmarkCircle20Regular />}
+                disabled={saving}
               >
                 Ajouter la sortie
               </Button>

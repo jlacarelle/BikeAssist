@@ -1,10 +1,4 @@
-import {
-  useState,
-  type Dispatch,
-  type FC,
-  type FormEvent,
-  type SetStateAction,
-} from "react";
+import { useState, type FC, type FormEvent } from "react";
 import {
   Button,
   Card,
@@ -26,6 +20,7 @@ import {
 } from "@fluentui/react-icons";
 import { useDashboardStyles } from "../../App.styles";
 import { useServiceScope } from "../../common/useServiceScope";
+import { getErrorMessage } from "../../services/apiClient";
 import AddBikeForm from "./AddBikeForm";
 import BikeDetail from "./BikeDetail";
 import type {
@@ -38,7 +33,7 @@ import type {
 
 type BikesPageProps = {
   bikes: Bike[];
-  onBikesChange: Dispatch<SetStateAction<Bike[]>>;
+  onDataChanged: () => Promise<void>;
   rides: Ride[];
   maintenanceEntries: MaintenanceEntry[];
   onAddRide: (bike: Bike) => void;
@@ -52,7 +47,7 @@ const number = (value: number) =>
 
 const BikesPage: FC<BikesPageProps> = ({
   bikes,
-  onBikesChange,
+  onDataChanged,
   rides,
   maintenanceEntries,
   onAddRide,
@@ -82,18 +77,21 @@ const BikesPage: FC<BikesPageProps> = ({
     setPage("form");
   }
 
-  function saveBike(
+  async function saveBike(
     event: FormEvent<HTMLFormElement>,
     bike: Bike,
     parts: BikePart[],
   ) {
     event.preventDefault();
-    const savedBike = serviceScope.veloService.createBike(bike, parts);
-    onBikesChange(serviceScope.veloService.getAllBikes());
-
-    setSelectedBikeId(savedBike.id);
-    setPage(editingBikeId ? "detail" : "list");
-    setError("");
+    try {
+      await serviceScope.veloService.saveBike({ ...bike, parts });
+      await onDataChanged();
+      setSelectedBikeId(bike.id);
+      setPage(editingBikeId ? "detail" : "list");
+      setError("");
+    } catch (submissionError) {
+      setError(getErrorMessage(submissionError));
+    }
   }
 
   return (

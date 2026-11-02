@@ -171,7 +171,14 @@ function BikeDetail({
             <Text className={styles.bikeMetricValue}>
               {number(totalDistance)} km
             </Text>
-            <Text className={styles.muted}>Depuis le {bike.addedOn}</Text>
+            <Text className={styles.muted}>
+              Depuis le{" "}
+              {bike.addedOn.toLocaleDateString("fr-FR", {
+                day: "numeric",
+                month: "long",
+                year: "numeric",
+              })}
+            </Text>
           </div>
           <span className={styles.iconTile}>
             <Sport24Regular />
@@ -180,7 +187,15 @@ function BikeDetail({
         <Card className={styles.bikeMetricCard}>
           <div>
             <Text className={styles.muted}>Dernier entretien</Text>
-            <Text className={styles.bikeMetricValue}>{bike.lastService}</Text>
+            <Text className={styles.bikeMetricValue}>
+              {bike.lastService
+                ? bike.lastService.toLocaleDateString("fr-FR", {
+                    day: "numeric",
+                    month: "long",
+                    year: "numeric",
+                  })
+                : "Aucun"}
+            </Text>
             <Text className={styles.muted}>Révision complète</Text>
           </div>
           <span className={styles.iconTile}>

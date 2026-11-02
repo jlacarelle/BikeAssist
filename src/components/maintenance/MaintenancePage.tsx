@@ -18,12 +18,13 @@ import { Settings24Regular, WrenchScrewdriver20Regular } from "@fluentui/react-i
 import { useState, type FormEvent } from "react";
 import type { Bike, BikePart, MaintenanceEntry } from "../../interfaces/bike";
 import type { PartReplacement } from "../../services/MaintenanceService";
+import { getErrorMessage } from "../../services/apiClient";
 import { useDashboardStyles } from "../../App.styles";
 
 type MaintenancePageProps = {
   bikes: Bike[];
   entries: MaintenanceEntry[];
-  onReplacePart: (replacement: PartReplacement) => void;
+  onReplacePart: (replacement: PartReplacement) => Promise<void>;
 };
 
 const number = (value: number) =>
@@ -60,7 +61,7 @@ function MaintenancePage({
     setError("");
   }
 
-  function submitReplacement(event: FormEvent<HTMLFormElement>) {
+  async function submitReplacement(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!selectedPart) return;
 
@@ -84,7 +85,7 @@ function MaintenancePage({
     }
 
     try {
-      onReplacePart({
+      await onReplacePart({
         bikeId: selectedPart.bike.id,
         partId: selectedPart.part.id,
         newMaxDistance: maxDistance,
@@ -95,9 +96,10 @@ function MaintenancePage({
       setSelectedPart(null);
     } catch (submissionError) {
       setError(
-        submissionError instanceof Error
-          ? submissionError.message
-          : "L’intervention n’a pas pu être enregistrée.",
+        getErrorMessage(
+          submissionError,
+          "L’intervention n’a pas pu être enregistrée.",
+        ),
       );
     }
   }

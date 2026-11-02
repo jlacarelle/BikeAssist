@@ -1,4 +1,4 @@
-import { lazy, Suspense, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useState } from "react";
 import { Navigate, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import {
   Badge,
@@ -10,6 +10,9 @@ import {
   DialogContent,
   DialogSurface,
   DialogTitle,
+  MessageBar,
+  MessageBarActions,
+  MessageBarBody,
   ProgressBar,
   Spinner,
   Text,
@@ -29,6 +32,7 @@ import { useServiceScope } from "./common/useServiceScope";
 import SideMenu, { type SideMenuView } from "./components/SideMenu";
 import type { Bike, MaintenanceEntry, Ride } from "./interfaces/bike";
 import type { PartReplacement } from "./services/MaintenanceService";
+import { getErrorMessage } from "./services/apiClient";
 
 const BikesPage = lazy(() => import("./components/bikes/BikesPage"));
 const AddRideDialog = lazy(() => import("./components/rides/AddRideDialog"));
@@ -56,15 +60,65 @@ function App() {
   const location = useLocation();
   const navigate = useNavigate();
   const view = pathViews[location.pathname] ?? "Vue d’ensemble";
-  const [bikes, setBikes] = useState<Bike[]>(() =>
-    serviceScope.veloService.getAllBikes(),
-  );
-  const [rides, setRides] = useState<Ride[]>(() =>
-    serviceScope.rideService.getAllRides(),
-  );
+  const [bikes, setBikes] = useState<Bike[]>([]);
+  const [rides, setRides] = useState<Ride[]>([]);
   const [maintenanceEntries, setMaintenanceEntries] = useState<
     MaintenanceEntry[]
-  >(() => serviceScope.maintenanceService.getAllEntries());
+  >([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
+  const [actionError, setActionError] = useState("");
+
+  const refreshState = useCallback(async () => {
+    try {
+      const state = await serviceScope.stateService.getState();
+      setBikes(state.bikes);
+      setRides(state.rides);
+      setMaintenanceEntries(state.maintenanceEntries);
+      setLoadError("");
+    } catch (error) {
+      setLoadError(
+        getErrorMessage(error, "Impossible de charger vos données."),
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  }, [serviceScope]);
+
+  useEffect(() => {
+    let ignore = false;
+    serviceScope.stateService
+      .getState()
+      .then((state) => {
+        if (ignore) return;
+        setBikes(state.bikes);
+        setRides(state.rides);
+        setMaintenanceEntries(state.maintenanceEntries);
+        setLoadError("");
+      })
+      .catch((error: unknown) => {
+        if (ignore) return;
+        setLoadError(
+          getErrorMessage(error, "Impossible de charger vos données."),
+        );
+      })
+      .finally(() => {
+        if (!ignore) setIsLoading(false);
+      });
+    return () => {
+      ignore = true;
+    };
+  }, [serviceScope]);
+
+  async function runMutation(mutation: () => Promise<unknown>) {
+    setActionError("");
+    try {
+      await mutation();
+    } catch (error) {
+      setActionError(getErrorMessage(error));
+    }
+    await refreshState();
+  }
   const [addOpen, setAddOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
   const [selectedRide, setSelectedRide] = useState<Ride | null>(null);
@@ -86,43 +140,43 @@ function App() {
     navigate(viewPaths[nextView]);
   }
 
-  function saveRide(ride: {
+  async function saveRide(ride: {
     name: string;
     bikeName: string;
     date: string;
     distance: number;
   }) {
     const bike = bikes.find((item) => item.name === ride.bikeName);
-    if (!bike) return;
-    serviceScope.rideService.createRide({
+    if (!bike) throw new Error("Vélo introuvable. Rechargez la page.");
+    await serviceScope.rideService.createRide({
       id: crypto.randomUUID(),
       name: ride.name,
       bike: ride.bikeName,
       bikeId: bike.id,
       date: new Date(`${ride.date}T12:00:00`).toLocaleDateString("fr-FR", {
-          day: "numeric",
-          month: "short",
+        day: "numeric",
+        month: "short",
       }),
       distance: ride.distance,
     });
-    setRides(serviceScope.rideService.getAllRides());
-    setBikes(serviceScope.veloService.getAllBikes());
+    await refreshState();
     setAddOpen(false);
   }
 
   function deleteRide(rideId: string) {
-    serviceScope.rideService.deleteRide(rideId);
-    setRides(serviceScope.rideService.getAllRides());
-    setBikes(serviceScope.veloService.getAllBikes());
     setSelectedRide((currentRide) =>
       currentRide?.id === rideId ? null : currentRide,
     );
+    void runMutation(() => serviceScope.rideService.deleteRide(rideId));
   }
 
-  function replacePart(replacement: PartReplacement) {
-    serviceScope.maintenanceService.replacePart(replacement);
-    setMaintenanceEntries(serviceScope.maintenanceService.getAllEntries());
-    setBikes(serviceScope.veloService.getAllBikes());
+  function deleteBike(bikeId: string) {
+    void runMutation(() => serviceScope.veloService.deleteBike(bikeId));
+  }
+
+  async function replacePart(replacement: PartReplacement) {
+    await serviceScope.maintenanceService.replacePart(replacement);
+    await refreshState();
   }
 
   function rideList(all = false) {
@@ -215,6 +269,28 @@ function App() {
           </div>
         </header>
         <main className={styles.mainContent}>
+          {(loadError || actionError) && (
+            <MessageBar intent="error">
+              <MessageBarBody>{loadError || actionError}</MessageBarBody>
+              <MessageBarActions>
+                {loadError ? (
+                  <Button
+                    appearance="transparent"
+                    onClick={() => void refreshState()}
+                  >
+                    Réessayer
+                  </Button>
+                ) : (
+                  <Button
+                    appearance="transparent"
+                    onClick={() => setActionError("")}
+                  >
+                    Fermer
+                  </Button>
+                )}
+              </MessageBarActions>
+            </MessageBar>
+          )}
           {view !== "Mes vélos" && (
             <div className={styles.pageHeading}>
               <div>
@@ -255,22 +331,19 @@ function App() {
             </div>
           )}
           <Suspense fallback={<Spinner label="Chargement…" />}>
+          {isLoading ? (
+            <Spinner label="Chargement de vos données…" />
+          ) : (
           <Routes>
             <Route
               path="/bikes"
               element={
             <BikesPage
               bikes={bikes}
-              onBikesChange={setBikes}
+              onDataChanged={refreshState}
               rides={rides}
               maintenanceEntries={maintenanceEntries}
-              onDeleteBike={(bikeId) => {
-                serviceScope.veloService.deleteBike(bikeId);
-                setBikes(serviceScope.veloService.getAllBikes());
-                setRides((currentRides) =>
-                  currentRides.filter((ride) => ride.bikeId !== bikeId),
-                );
-              }}
+              onDeleteBike={deleteBike}
               onAddRide={(bike) => {
                 setInitialRideBike(bike.name);
                 setAddOpen(true);
@@ -428,6 +501,7 @@ function App() {
             />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
+          )}
           </Suspense>
         </main>
       </div>
@@ -451,9 +525,9 @@ function App() {
             <DialogTitle>Centre d’aide</DialogTitle>
             <DialogContent>
               <Text>
-                BikeAssist rassemble vos vélos, sorties et entretiens. Les vélos
-                et sorties ajoutés sont conservés uniquement pendant cette
-                session et disparaissent au rechargement.
+                BikeAssist rassemble vos vélos, sorties et entretiens. Vos
+                données sont enregistrées dans votre compte et retrouvées à
+                chaque connexion.
               </Text>
             </DialogContent>
             <DialogActions>
