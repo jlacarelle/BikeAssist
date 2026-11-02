@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { lazy, Suspense, useState } from "react";
 import { Navigate, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import {
   Badge,
@@ -11,6 +11,7 @@ import {
   DialogSurface,
   DialogTitle,
   ProgressBar,
+  Spinner,
   Text,
   Title1,
   mergeClasses,
@@ -25,13 +26,14 @@ import {
 } from "@fluentui/react-icons";
 import { useDashboardStyles, useGlobalStyles } from "./App.styles";
 import { useServiceScope } from "./common/useServiceScope";
-import BikesPage from "./components/bikes/BikesPage";
-import AddRideDialog from "./components/rides/AddRideDialog";
-import RidesPage from "./components/rides/RidesPage";
-import MaintenancePage from "./components/maintenance/MaintenancePage";
 import SideMenu, { type SideMenuView } from "./components/SideMenu";
 import type { Bike, MaintenanceEntry, Ride } from "./interfaces/bike";
 import type { PartReplacement } from "./services/MaintenanceService";
+
+const BikesPage = lazy(() => import("./components/bikes/BikesPage"));
+const AddRideDialog = lazy(() => import("./components/rides/AddRideDialog"));
+const RidesPage = lazy(() => import("./components/rides/RidesPage"));
+const MaintenancePage = lazy(() => import("./components/maintenance/MaintenancePage"));
 
 type View = SideMenuView;
 const viewPaths: Record<View, string> = {
@@ -252,6 +254,7 @@ function App() {
               )}
             </div>
           )}
+          <Suspense fallback={<Spinner label="Chargement…" />}>
           <Routes>
             <Route
               path="/bikes"
@@ -425,16 +428,19 @@ function App() {
             />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
+          </Suspense>
         </main>
       </div>
       {addOpen && (
-        <AddRideDialog
-          open={addOpen}
-          bikes={bikes}
-          initialBikeName={initialRideBike}
-          onClose={() => setAddOpen(false)}
-          onSubmit={saveRide}
-        />
+        <Suspense fallback={null}>
+          <AddRideDialog
+            open={addOpen}
+            bikes={bikes}
+            initialBikeName={initialRideBike}
+            onClose={() => setAddOpen(false)}
+            onSubmit={saveRide}
+          />
+        </Suspense>
       )}
       <Dialog
         open={helpOpen}
