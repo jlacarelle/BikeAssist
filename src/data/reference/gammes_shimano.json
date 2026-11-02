@@ -1,0 +1,45 @@
+[
+    {
+        "gamme": "Dura-Ace",
+        "positionnement": "Compétition / Professionnel",
+        "versions": [
+            { "generation": "Di2 (R9200)", "vitesses": 12, "type": "Électronique" }
+        ]
+    },
+    {
+        "gamme": "Ultegra",
+        "positionnement": "Compétition / Cyclosportif intensif",
+        "versions": [
+            { "generation": "Di2 (R8100)", "vitesses": 12, "type": "Électronique" }
+        ]
+    },
+    {
+        "gamme": "105",
+        "positionnement": "Cyclosportif / Performance accessible",
+        "versions": [
+            { "generation": "Di2 (R7150)", "vitesses": 12, "type": "Électronique" },
+            { "generation": "Mécanique (R7100)", "vitesses": 12, "type": "Mécanique" }
+        ]
+    },
+    {
+        "gamme": "Tiagra",
+        "positionnement": "Loisir / Entraînement",
+        "versions": [
+            { "generation": "Mécanique (4700)", "vitesses": 10, "type": "Mécanique" }
+        ]
+    },
+    {
+        "gamme": "Sora",
+        "positionnement": "Entrée de gamme / Cyclotourisme",
+        "versions": [
+            { "generation": "Mécanique (R3000)", "vitesses": 9, "type": "Mécanique" }
+        ]
+    },
+    {
+        "gamme": "Claris",
+        "positionnement": "Initiation / Randonnée",
+        "versions": [
+            { "generation": "Mécanique (R2000)", "vitesses": 8, "type": "Mécanique" }
+        ]
+    }
+]
