@@ -10,7 +10,6 @@ import {
   DialogContent,
   DialogSurface,
   DialogTitle,
-  Image,
   ProgressBar,
   Text,
   Title1,
@@ -24,7 +23,6 @@ import {
   Sport24Regular,
   Map24Regular,
 } from "@fluentui/react-icons";
-import bikeIllustration from "../design/assets/gravel-bike-illustration.png";
 import { useDashboardStyles, useGlobalStyles } from "./App.styles";
 import { useServiceScope } from "./common/useServiceScope";
 import BikesPage from "./components/bikes/BikesPage";
@@ -287,31 +285,27 @@ function App() {
               >
                 <div className={styles.bannerCopy}>
                   <Text className={styles.garageStatus}>
-                    <span className={styles.statusDot} /> VOTRE GARAGE
+                    VOTRE ACTIVITÉ
                   </Text>
-                  <div className={styles.annualDistance}>
-                    <Text>{number(totalRideDistance)}</Text>
-                    <Text>km</Text>
-                  </div>
                   <Text className={styles.bannerSubtitle}>
-                    parcourus sur vos sorties enregistrées
+                    Vos kilomètres s’additionnent, sortie après sortie.
                   </Text>
                   <div className={styles.bannerBottom}>
-                    <Badge appearance="tint" color="success">
+                    <Text>{rides.length} sortie(s) enregistrée(s)</Text>
+                    <span className={styles.bannerDivider} aria-hidden="true" />
+                    <Text className={styles.bannerCondition}>
                       {bikes.length === 0
                         ? "Garage vide"
                         : partsToWatch.length === 0
                           ? "Tout est à jour"
                           : `${partsToWatch.length} pièce(s) à surveiller`}
-                    </Badge>
-                    <Text>{rides.length} sortie(s) enregistrée(s)</Text>
+                    </Text>
                   </div>
                 </div>
-                <Image
-                  src={bikeIllustration}
-                  alt="Vélo gravel vert"
-                  className={styles.bikeIllustration}
-                />
+                <div className={styles.annualDistance}>
+                  <Text>{number(totalRideDistance)}</Text>
+                  <Text>km</Text>
+                </div>
               </section>
               <section
                 className={styles.statsGrid}
